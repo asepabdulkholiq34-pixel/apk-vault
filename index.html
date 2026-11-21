@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APK Vault - AL MANAR</title>
+<style>
+*{box-sizing:border-box;font-family:Arial,sans-serif}
+body{margin:0;background:#f0f2f5;padding:16px}
+.header{background:#1a73e8;color:white;padding:18px;border-radius:14px;text-align:center}
+.header h1{margin:0;font-size:22px}
+.header p{margin:6px 0 0;opacity:.9;font-size:13px}
+.card{background:white;padding:16px;border-radius:14px;margin-top:14px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+input[type=file]{display:none}
+.btn{display:block;width:100%;padding:13px;border:none;border-radius:10px;font-size:15px;font-weight:bold;cursor:pointer;text-align:center;text-decoration:none}
+.btn-blue{background:#1a73e8;color:white}
+.btn-green{background:#0f9d58;color:white}
+.btn-red{background:#d93025;color:white}
+.btn-grey{background:#eee;color:#333}
+input[type=text]{width:100%;padding:12px;border:1px solid #ddd;border-radius:10px;margin:10px 0;font-size:14px}
+.item{border:1px solid #eee;border-radius:12px;padding:12px;margin-bottom:10px;display:flex;gap:10px;align-items:center}
+.icon{width:48px;height:48px;background:#e8f0fe;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.info{flex:1;min-width:0}
+.info b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.info small{color:#666;font-size:12px}
+.aksi{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.aksi button{padding:8px 10px;border:none;border-radius:8px;font-size:12px;font-weight:bold;cursor:pointer}
+.down{background:#0f9d58;color:white}
+.hapus{background:#fce8e6;color:#d93025}
+.copy{background:#e8f0fe;color:#1a73e8}
+.empty{text-align:center;color:#888;padding:20px;font-size:14px}
+.progress{height:8px;background:#eee;border-radius:99px;overflow:hidden;margin-top:10px;display:none}
+.progress div{height:100%;background:#1a73e8;width:0%}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#333;color:white;padding:10px 16px;border-radius:99px;font-size:13px;display:none;z-index:99}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📦 APK Vault - AL MANAR</h1>
+  <p>Simpan & Bagi File APK Lewat Link GitHub</p>
+</div>
+
+<div class="card">
+  <label for="fileInput" class="btn btn-blue">📤 + UPLOAD FILE APK</label>
+  <input type="file" id="fileInput" accept=".apk,application/vnd.android.package-archive">
+  <input type="text" id="namaApk" placeholder="Nama Aplikasi (misal: Absensi AL MANAR)">
+  <input type="text" id="ketApk" placeholder="Keterangan (misal: Versi 1.0 - Untuk Kelas XI)">
+  <button class="btn btn-green" onclick="simpanApk()">💾 SIMPAN KE VAULT</button>
+  <div class="progress" id="progWrap"><div id="progBar"></div></div>
+  <p style="font-size:12px;color:#666;text-align:center;margin:10px 0 0">File tersimpan di HP ini. Aman, tidak dikirim ke server.</p>
+</div>
+
+<div class="card">
+  <input type="text" id="cari" placeholder="🔍 Cari APK..." oninput="tampil()">
+  <div id="list"></div>
+  <div id="total" style="text-align:center;font-size:12px;color:#888;margin-top:10px"></div>
+</div>
+
+<div class="card">
+  <b>Cara Bagi Ke Orang Lain:</b>
+  <p style="font-size:13px;line-height:1.6;color:#444">
+    1. Pencet tombol <b>Copy Link</b> di APK nya, Pak.<br>
+    2. Kirim ke WA, Pak.<br>
+    3. Kalau mau bagi file nya langsung, pencet <b>Download</b>, terus kirim file nya lewat WA, Pak.<br><br>
+  <b>Tips GitHub:</b> Kalau mau file nya bisa di-download orang lain lewat link GitHub tanpa HP Bapak, upload file .apk nya langsung ke Repo GitHub ini, Pak. Terus link nya jadi: <br>
+  <code>https://Bapak.github.io/apk-vault/nama-file.apk</code>
+  </p>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let fileDipilih = null;
+let db;
+let request = indexedDB.open("ApkVaultDB", 1);
+request.onupgradeneeded = e => {
+  db = e.target.result;
+  if(!db.objectStoreNames.contains("apks")) db.createObjectStore("apks", {keyPath:"id", autoIncrement:true});
+};
+request.onsuccess = e => { db = e.target.result; tampil(); };
+
+document.getElementById("fileInput").addEventListener("change", function(){
+  fileDipilih = this.files[0];
+  if(fileDipilih){
+    let nama = fileDipilih.name.replace(".apk","");
+    document.getElementById("namaApk").value = nama;
+    toast("File dipilih: " + fileDipilih.name);
+  }
+});
+
+function toast(pesan){
+  let t = document.getElementById("toast");
+  t.innerText = pesan; t.style.display="block";
+  setTimeout(()=> t.style.display="none", 2500);
+}
+function formatUkuran(b){
+  if(b < 1024) return b + " B";
+  if(b < 1024*1024) return (b/1024).toFixed(1) + " KB";
+  return (b/(1024*1024)).toFixed(1) + " MB";
+}
+function simpanApk(){
+  if(!fileDipilih){ toast("Pilih file APK dulu, Pak!"); return; }
+  let nama = document.getElementById("namaApk").value.trim() || fileDipilih.name;
+  let ket = document.getElementById("ketApk").value.trim();
+  let reader = new FileReader();
+  document.getElementById("progWrap").style.display="block";
+  reader.onprogress = e => {
+    if(e.lengthComputable){
+      let p = Math.round((e.loaded/e.total)*100);
+      document.getElementById("progBar").style.width = p + "%";
+    }
+  };
+  reader.onload = e => {
+    let data = {
+      nama: nama,
+      ket: ket,
+      fileName: fileDipilih.name,
+      ukuran: fileDipilih.size,
+      tanggal: new Date().toLocaleDateString("id-ID") + " " + new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"}),
+      blob: e.target.result,
+      timestamp: Date.now()
+    };
+    let tx = db.transaction("apks","readwrite");
+    tx.objectStore("apks").add(data);
+    tx.oncomplete = ()=>{
+      toast("Berhasil disimpan, Pak! ✅");
+      document.getElementById("namaApk").value="";
+      document.getElementById("ketApk").value="";
+      document.getElementById("fileInput").value="";
+      fileDipilih=null;
+      document.getElementById("progWrap").style.display="none";
+      document.getElementById("progBar").style.width="0%";
+      tampil();
+    };
+  };
+  reader.readAsArrayBuffer(fileDipilih);
+}
+
+function tampil(){
+  let cari = document.getElementById("cari").value.toLowerCase();
+  let listEl = document.getElementById("list");
+  let tx = db.transaction("apks","readonly");
+  let req = tx.objectStore("apks").getAll();
+  req.onsuccess = ()=>{
+    let data = req.result.sort((a,b)=> b.timestamp - a.timestamp);
+    if(cari) data = data.filter(d=> d.nama.toLowerCase().includes(cari));
+    document.getElementById("total").innerText = "Total: " + data.length + " APK tersimpan";
+    if(data.length===0){
+      listEl.innerHTML = '<div class="empty">Belum ada APK.<br>Pencet UPLOAD di atas, Pak.</div>';
+      return;
+    }
+    listEl.innerHTML = data.map(d=>`
+      <div class="item">
+        <div class="icon">📦</div>
+        <div class="info">
+          <b>${d.nama}</b>
+          <small>${d.fileName} • ${formatUkuran(d.ukuran)} • ${d.tanggal}</small><br>
+          <small>${d.ket || ""}</small>
+          <div class="aksi">
+            <button class="down" onclick="downloadApk(${d.id})">⬇ Download</button>
+            <button class="copy" onclick="copyLink('${d.fileName}')">🔗 Copy Link GitHub</button>
+            <button class="hapus" onclick="hapusApk(${d.id})">🗑 Hapus</button>
+          </div>
+        </div>
+      </div>
+    `).join("");
+  };
+}
+
+function downloadApk(id){
+  let tx = db.transaction("apks","readonly");
+  tx.objectStore("apks").get(id).onsuccess = e=>{
+    let d = e.target.result;
+    let blob = new Blob([d.blob], {type:"application/vnd.android.package-archive"});
+    let url = URL.createObjectURL(blob);
+    let a = document.createElement("a");
+    a.href=url; a.download=d.fileName; a.click();
+    URL.revokeObjectURL(url);
+    toast("Download dimulai, Pak!");
+  };
+}
+function hapusApk(id){
+  if(!confirm("Hapus APK ini, Pak?")) return;
+  let tx = db.transaction("apks","readwrite");
+  tx.objectStore("apks").delete(id);
+  tx.oncomplete = ()=>{ toast("Dihapus, Pak."); tampil(); };
+}
+function copyLink(fileName){
+  let link = location.origin + location.pathname.replace("index.html","") + fileName;
+  navigator.clipboard.writeText(link).then(()=>{
+    toast("Link disalin! Tinggal paste ke WA, Pak.");
+  }).catch(()=>{
+    prompt("Copy link ini, Pak:", link);
+  });
+}
+</script>
+</body>
+</html>
