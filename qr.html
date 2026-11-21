@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QR Generator + Logo + Warna - AL MANAR</title>
+<title>QR Generator + Logo Kompres - AL MANAR</title>
 <style>
 body{font-family:Arial;background:#f0f4f8;margin:0;padding:16px}
 .card{background:#fff;max-width:480px;margin:auto;padding:20px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.1);text-align:center}
@@ -22,12 +22,13 @@ canvas{border:8px solid #fff;box-shadow:0 0 10px rgba(0,0,0,.15);border-radius:8
 .warna-btn{width:45px;height:45px;border-radius:50%;border:3px solid #ddd;cursor:pointer;padding:0}
 .warna-btn.aktif{border:3px solid #000;transform:scale(1.15)}
 small{color:#888}
+.info-kompres{background:#e8f5e9;border:1px solid #a5d6a7;padding:8px;border-radius:8px;font-size:13px;color:#2e7d32;display:none;margin-top:8px}
 </style>
 </head>
 <body>
 <div class="card">
 <h2>📷 QR GENERATOR</h2>
-<p>AL MANAR - QR + Logo + Warna Aman Scan</p>
+<p>AL MANAR - QR + Logo Kompres Otomatis</p>
 <select id="tipe" onchange="gantiTipe()">
 <option value="link">🔗 Link / Teks</option>
 <option value="wa">💬 WhatsApp</option>
@@ -37,25 +38,29 @@ small{color:#888}
 <div id="box-wa" style="display:none"><input id="nowa" placeholder="Nomor WA, contoh: 628123456789"><input id="pesanwa" placeholder="Pesan otomatis (boleh kosong)"></div>
 <div id="box-wifi" style="display:none"><input id="namawifi" placeholder="Nama WiFi"><input id="passwifi" placeholder="Password WiFi"></div>
 
-<b>🎨 PILIH WARNA QR (Semua Aman Di-Scan, Pak!)</b><br>
-<small>Belakang tetep putih, Pak. Biar gampang kebaca.</small>
+<b>🎨 PILIH WARNA QR</b><br>
+<small>Semua aman di-scan, Pak. Belakang tetep putih.</small>
 <div class="warna-box">
-<button class="warna-btn aktif" style="background:#000" onclick="pilihWarna('000000',this)" title="Hitam"></button>
-<button class="warna-btn" style="background:#0f5132" onclick="pilihWarna('0f5132',this)" title="Hijau Pesantren"></button>
-<button class="warna-btn" style="background:#0d47a1" onclick="pilihWarna('0d47a1',this)" title="Biru Tua"></button>
-<button class="warna-btn" style="background:#800000" onclick="pilihWarna('800000',this)" title="Maroon"></button>
-<button class="warna-btn" style="background:#4a148c" onclick="pilihWarna('4a148c',this)" title="Ungu Tua"></button>
-<button class="warna-btn" style="background:#3e2723" onclick="pilihWarna('3e2723',this)" title="Coklat Tua"></button>
+<button class="warna-btn aktif" style="background:#000" onclick="pilihWarna('000000',this)"></button>
+<button class="warna-btn" style="background:#0f5132" onclick="pilihWarna('0f5132',this)"></button>
+<button class="warna-btn" style="background:#0d47a1" onclick="pilihWarna('0d47a1',this)"></button>
+<button class="warna-btn" style="background:#800000" onclick="pilihWarna('800000',this)"></button>
+<button class="warna-btn" style="background:#4a148c" onclick="pilihWarna('4a148c',this)"></button>
+<button class="warna-btn" style="background:#3e2723" onclick="pilihWarna('3e2723',this)"></button>
 </div>
 <p id="namaWarna" style="font-weight:bold;color:#0f5132">Warna: Hitam (Paling Aman)</p>
 
 <div class="box-logo">
-<b>🖼️ TAMBAH LOGO / FOTO DI TENGAH QR</b><br>
+<b>🖼️ TAMBAH LOGO / FOTO - AUTO KOMPRES</b><br>
+<small>Bapak pake foto 10 MB juga bisa, Pak. Nanti dikecilin otomatis.</small><br>
 <img id="previewLogo"><br>
 <input type="file" id="logoInput" accept="image/*" onchange="previewLogoFunc()">
-<br><br>
-<label><b>Ukuran Logo:</b></label>
-<select id="ukuranLogo"><option value="50">Kecil</option><option value="70" selected>Sedang</option><option value="90">Besar</option></select>
+<div id="infoKompres" class="info-kompres"></div>
+<br>
+<label><b>Ukuran Logo di QR:</b></label>
+<select id="ukuranLogo"><option value="50">Kecil - Paling Aman Scan</option><option value="70" selected>Sedang</option><option value="90">Besar</option></select>
+<label><b>Kualitas Kompres:</b></label>
+<select id="kualitas"><option value="0.9">Bagus Banget</option><option value="0.7" selected>Bagus (Rekomendasi)</option><option value="0.5">Kecil Banget</option></select>
 </div>
 
 <button class="btn-green" onclick="buatQR()">✨ BUAT QR WARNA + LOGO</button>
@@ -66,25 +71,35 @@ small{color:#888}
 <script>
 let logoData=null; let warnaQR='000000';
 let namaWarnaMap={'000000':'Hitam (Paling Aman)','0f5132':'Hijau Pesantren','0d47a1':'Biru Tua','800000':'Maroon','4a148c':'Ungu Tua','3e2723':'Coklat Tua'};
-function pilihWarna(kode,el){
- warnaQR=kode;
- document.querySelectorAll('.warna-btn').forEach(b=>b.classList.remove('aktif'));
- el.classList.add('aktif');
- document.getElementById('namaWarna').innerText='Warna: '+namaWarnaMap[kode];
-}
-function gantiTipe(){
- let t=document.getElementById('tipe').value;
- document.getElementById('box-link').style.display=t=='link'?'block':'none';
- document.getElementById('box-wa').style.display=t=='wa'?'block':'none';
- document.getElementById('box-wifi').style.display=t=='wifi'?'block':'none';
-}
+function pilihWarna(kode,el){ warnaQR=kode; document.querySelectorAll('.warna-btn').forEach(b=>b.classList.remove('aktif')); el.classList.add('aktif'); document.getElementById('namaWarna').innerText='Warna: '+namaWarnaMap[kode]; }
+function gantiTipe(){ let t=document.getElementById('tipe').value; document.getElementById('box-link').style.display=t=='link'?'block':'none'; document.getElementById('box-wa').style.display=t=='wa'?'block':'none'; document.getElementById('box-wifi').style.display=t=='wifi'?'block':'none'; }
+function formatKB(b){ if(b<1024) return b+' Byte'; if(b<1024*1024) return (b/1024).toFixed(0)+' KB'; return (b/1024/1024).toFixed(2)+' MB'; }
 function previewLogoFunc(){
  let f=document.getElementById('logoInput').files[0]; if(!f) return;
+ let ukuranAwal=f.size;
+ let info=document.getElementById('infoKompres');
+ info.style.display='block'; info.innerText='⏳ Lagi ngompres... '+formatKB(ukuranAwal)+'... tunggu ya, Pak...';
  let r=new FileReader();
- r.onload=function(e){ logoData=e.target.result; let img=document.getElementById('previewLogo'); img.src=logoData; img.style.display='block'; };
+ r.onload=function(e){
+  let img=new Image();
+  img.onload=function(){
+   // KOMPRES: Maksimal 800px, Pak. Biar kecil tapi tetep jernih.
+   let max=800; let w=img.width, h=img.height;
+   if(w>max || h>max){ let ratio=Math.min(max/w, max/h); w=Math.round(w*ratio); h=Math.round(h*ratio); }
+   let c=document.createElement('canvas'); c.width=w; c.height=h;
+   let ctx=c.getContext('2d'); ctx.drawImage(img,0,0,w,h);
+   let q=parseFloat(document.getElementById('kualitas').value);
+   let hasil=c.toDataURL('image/jpeg', q);
+   logoData=hasil;
+   let ukuranAkhir=Math.round(hasil.length*0.75);
+   let p=document.getElementById('previewLogo'); p.src=logoData; p.style.display='block';
+   info.innerHTML='✅ Berhasil dikompres, Pak!<br>Dari <b>'+formatKB(ukuranAwal)+'</b> jadi <b>'+formatKB(ukuranAkhir)+'</b>. Hemat '+Math.max(0,Math.round(100-(ukuranAkhir/ukuranAwal*100)))+'%, Pak!';
+  };
+  img.src=e.target.result;
+ };
  r.readAsDataURL(f);
 }
-function hapusLogo(){ logoData=null; document.getElementById('logoInput').value=''; document.getElementById('previewLogo').style.display='none'; alert('Logo udah dihapus, Pak!'); }
+function hapusLogo(){ logoData=null; document.getElementById('logoInput').value=''; document.getElementById('previewLogo').style.display='none'; document.getElementById('infoKompres').style.display='none'; alert('Logo udah dihapus, Pak!'); }
 function buatQR(){
  let t=document.getElementById('tipe').value; let data='';
  if(t=='link'){ data=document.getElementById('isi').value; }
