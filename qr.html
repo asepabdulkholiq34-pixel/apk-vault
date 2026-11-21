@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QR Generator - AL MANAR</title>
+<title>QR Generator + Logo - AL MANAR</title>
 <style>
 body{font-family:Arial;background:#f0f4f8;margin:0;padding:16px}
 .card{background:#fff;max-width:480px;margin:auto;padding:20px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.1);text-align:center}
@@ -13,14 +13,18 @@ input,select,textarea{width:100%;padding:12px;border:1px solid #ddd;border-radiu
 button{width:100%;padding:13px;border:none;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer;margin-top:8px}
 .btn-green{background:#198754;color:#fff}
 .btn-blue{background:#0d6efd;color:#fff}
+.btn-orange{background:#fd7e14;color:#fff}
 #hasil{margin:18px auto;display:none}
-#hasil img{border:8px solid #fff;box-shadow:0 0 10px rgba(0,0,0,.15);border-radius:8px;width:260px;height:260px}
+canvas{border:8px solid #fff;box-shadow:0 0 10px rgba(0,0,0,.15);border-radius:8px;max-width:100%}
+.box-logo{border:2px dashed #198754;border-radius:12px;padding:12px;background:#f8fff9;margin-top:10px}
+#previewLogo{width:70px;height:70px;object-fit:cover;border-radius:12px;display:none;margin:auto;border:2px solid #198754}
+small{color:#888}
 </style>
 </head>
 <body>
 <div class="card">
 <h2>📷 QR GENERATOR</h2>
-<p>AL MANAR - Buat QR Gratis</p>
+<p>AL MANAR - QR + Logo / Foto</p>
 <select id="tipe" onchange="gantiTipe()">
 <option value="link">🔗 Link / Teks</option>
 <option value="wa">💬 WhatsApp</option>
@@ -29,16 +33,52 @@ button{width:100%;padding:13px;border:none;border-radius:10px;font-size:16px;fon
 <div id="box-link"><textarea id="isi" rows="3" placeholder="Tempel Link atau Teks disini...">https://google.com</textarea></div>
 <div id="box-wa" style="display:none"><input id="nowa" placeholder="Nomor WA, contoh: 628123456789"><input id="pesanwa" placeholder="Pesan otomatis (boleh kosong)"></div>
 <div id="box-wifi" style="display:none"><input id="namawifi" placeholder="Nama WiFi"><input id="passwifi" placeholder="Password WiFi"></div>
-<button class="btn-green" onclick="buatQR()">✨ BUAT QR CODE</button>
-<div id="hasil"><img id="qrimg" src=""><p id="info" style="font-size:12px"></p></div>
-<a id="downloadLink" style="display:none" download="QR-ALMANAR.png"><button class="btn-blue">⬇️ DOWNLOAD GAMBAR QR</button></a>
+
+<div class="box-logo">
+<b>🖼️ TAMBAH LOGO / FOTO DI TENGAH QR</b><br>
+<small>Logo Pesantren / Foto Bapak / Gambar apa aja, Pak</small><br><br>
+<img id="previewLogo"><br>
+<input type="file" id="logoInput" accept="image/*" onchange="previewLogoFunc()">
+<br><small>Kalau gak pake logo, QR biasa aja, Pak. Tetep jalan, Pak.</small>
+<br><br>
+<label><b>Ukuran Logo:</b></label>
+<select id="ukuranLogo">
+<option value="50">Kecil</option>
+<option value="70" selected>Sedang</option>
+<option value="90">Besar</option>
+</select>
+</div>
+
+<button class="btn-green" onclick="buatQR()">✨ BUAT QR + LOGO</button>
+<div id="hasil"><canvas id="qrCanvas" width="300" height="300"></canvas><p id="info" style="font-size:12px"></p></div>
+<button class="btn-blue" id="btnDownload" style="display:none" onclick="downloadQR()">⬇️ DOWNLOAD GAMBAR QR + LOGO</button>
+<button class="btn-orange" onclick="hapusLogo()">🗑️ HAPUS LOGO</button>
 </div>
 <script>
+let logoData = null;
 function gantiTipe(){
  let t=document.getElementById('tipe').value;
  document.getElementById('box-link').style.display = t=='link'?'block':'none';
  document.getElementById('box-wa').style.display = t=='wa'?'block':'none';
  document.getElementById('box-wifi').style.display = t=='wifi'?'block':'none';
+}
+function previewLogoFunc(){
+ let f=document.getElementById('logoInput').files[0];
+ if(!f) return;
+ let r=new FileReader();
+ r.onload=function(e){
+  logoData=e.target.result;
+  let img=document.getElementById('previewLogo');
+  img.src=logoData; img.style.display='block';
+  alert('Logo udah masuk, Pak! Tinggal pencet BUAT QR, Pak!');
+ };
+ r.readAsDataURL(f);
+}
+function hapusLogo(){
+ logoData=null;
+ document.getElementById('logoInput').value='';
+ document.getElementById('previewLogo').style.display='none';
+ alert('Logo udah dihapus, Pak!');
 }
 function buatQR(){
  let t=document.getElementById('tipe').value;
@@ -47,11 +87,46 @@ function buatQR(){
  if(t=='wa'){ let n=document.getElementById('nowa').value; let p=document.getElementById('pesanwa').value; data='https://wa.me/'+n+'?text='+encodeURIComponent(p); }
  if(t=='wifi'){ let n=document.getElementById('namawifi').value; let p=document.getElementById('passwifi').value; data='WIFI:T:WPA;S:'+n+';P:'+p+';;'; }
  if(!data){ alert('Isi dulu ya, Pak!'); return; }
- let url='https://api.qrserver.com/v1/create-qr-code/?size=260x260&data='+encodeURIComponent(data);
- document.getElementById('qrimg').src=url;
+ document.getElementById('info').innerText='Lagi bikin QR... tunggu bentar ya, Pak...';
  document.getElementById('hasil').style.display='block';
+ let url='https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=5&data='+encodeURIComponent(data);
+ let qrImg=new Image();
+ qrImg.crossOrigin='anonymous';
+ qrImg.onload=function(){
+  let c=document.getElementById('qrCanvas');
+  let ctx=c.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,300,300);
+  ctx.drawImage(qrImg,0,0,300,300);
+  if(logoData){
+   let logoImg=new Image();
+   logoImg.onload=function(){
+    let s=parseInt(document.getElementById('ukuranLogo').value);
+    let x=(300-s)/2, y=(300-s)/2;
+    ctx.fillStyle='#fff';
+    ctx.beginPath(); ctx.roundRect(x-6,y-6,s+12,s+12,12); ctx.fill();
+    ctx.strokeStyle='#198754'; ctx.lineWidth=2; ctx.stroke();
+    ctx.save();
+    ctx.beginPath(); ctx.roundRect(x,y,s,s,10); ctx.clip();
+    ctx.drawImage(logoImg,x,y,s,s);
+    ctx.restore();
+    selesai(data);
+   };
+   logoImg.src=logoData;
+  } else { selesai(data); }
+ };
+ qrImg.onerror=function(){ alert('Internet lemot, Pak! Coba pencet lagi ya, Pak!'); };
+ qrImg.src=url;
+}
+function selesai(data){
  document.getElementById('info').innerText='QR untuk: '+data;
- let dl=document.getElementById('downloadLink'); dl.href=url; dl.style.display='block';
+ document.getElementById('btnDownload').style.display='block';
+}
+function downloadQR(){
+ let c=document.getElementById('qrCanvas');
+ let a=document.createElement('a');
+ a.download='QR-ALMANAR-LOGO.png';
+ a.href=c.toDataURL('image/png');
+ a.click();
 }
 </script>
 </body>
