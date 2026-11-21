@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>QR Generator - AL MANAR</title>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <style>
 body{font-family:Arial;background:#f0f4f8;margin:0;padding:16px}
 .card{background:#fff;max-width:480px;margin:auto;padding:20px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.1);text-align:center}
@@ -14,41 +13,26 @@ input,select,textarea{width:100%;padding:12px;border:1px solid #ddd;border-radiu
 button{width:100%;padding:13px;border:none;border-radius:10px;font-size:16px;font-weight:bold;cursor:pointer;margin-top:8px}
 .btn-green{background:#198754;color:#fff}
 .btn-blue{background:#0d6efd;color:#fff}
-#qrcode{margin:18px auto;display:flex;justify-content:center}
-#qrcode canvas{border:8px solid #fff;box-shadow:0 0 10px rgba(0,0,0,.15);border-radius:8px}
+#hasil{margin:18px auto;display:none}
+#hasil img{border:8px solid #fff;box-shadow:0 0 10px rgba(0,0,0,.15);border-radius:8px;width:260px;height:260px}
 </style>
 </head>
 <body>
 <div class="card">
 <h2>📷 QR GENERATOR</h2>
 <p>AL MANAR - Buat QR Gratis</p>
-
 <select id="tipe" onchange="gantiTipe()">
 <option value="link">🔗 Link / Teks</option>
 <option value="wa">💬 WhatsApp</option>
 <option value="wifi">📶 WiFi</option>
 </select>
-
-<div id="box-link">
-<textarea id="isi" rows="3" placeholder="Tempel Link atau Teks disini...&#10;Contoh: https://google.com"></textarea>
-</div>
-
-<div id="box-wa" style="display:none">
-<input id="nowa" placeholder="Nomor WA, contoh: 628123456789">
-<input id="pesanwa" placeholder="Pesan otomatis (boleh kosong)">
-</div>
-
-<div id="box-wifi" style="display:none">
-<input id="namawifi" placeholder="Nama WiFi">
-<input id="passwifi" placeholder="Password WiFi">
-</div>
-
+<div id="box-link"><textarea id="isi" rows="3" placeholder="Tempel Link atau Teks disini...">https://google.com</textarea></div>
+<div id="box-wa" style="display:none"><input id="nowa" placeholder="Nomor WA, contoh: 628123456789"><input id="pesanwa" placeholder="Pesan otomatis (boleh kosong)"></div>
+<div id="box-wifi" style="display:none"><input id="namawifi" placeholder="Nama WiFi"><input id="passwifi" placeholder="Password WiFi"></div>
 <button class="btn-green" onclick="buatQR()">✨ BUAT QR CODE</button>
-<div id="qrcode"></div>
-<button class="btn-blue" id="btnDownload" style="display:none" onclick="downloadQR()">⬇️ DOWNLOAD GAMBAR QR</button>
-<p id="info" style="font-size:12px"></p>
+<div id="hasil"><img id="qrimg" src=""><p id="info" style="font-size:12px"></p></div>
+<a id="downloadLink" style="display:none" download="QR-ALMANAR.png"><button class="btn-blue">⬇️ DOWNLOAD GAMBAR QR</button></a>
 </div>
-
 <script>
 function gantiTipe(){
  let t=document.getElementById('tipe').value;
@@ -63,17 +47,11 @@ function buatQR(){
  if(t=='wa'){ let n=document.getElementById('nowa').value; let p=document.getElementById('pesanwa').value; data='https://wa.me/'+n+'?text='+encodeURIComponent(p); }
  if(t=='wifi'){ let n=document.getElementById('namawifi').value; let p=document.getElementById('passwifi').value; data='WIFI:T:WPA;S:'+n+';P:'+p+';;'; }
  if(!data){ alert('Isi dulu ya, Pak!'); return; }
- document.getElementById('qrcode').innerHTML='';
- QRCode.toCanvas(data,{width:260,margin:2},function(err,canvas){
-   if(err) return alert(err);
-   document.getElementById('qrcode').appendChild(canvas);
-   document.getElementById('btnDownload').style.display='block';
-   document.getElementById('info').innerText='QR untuk: '+data;
- });
-}
-function downloadQR(){
- let c=document.querySelector('#qrcode canvas');
- let a=document.createElement('a'); a.download='QR-ALMANAR.png'; a.href=c.toDataURL(); a.click();
+ let url='https://api.qrserver.com/v1/create-qr-code/?size=260x260&data='+encodeURIComponent(data);
+ document.getElementById('qrimg').src=url;
+ document.getElementById('hasil').style.display='block';
+ document.getElementById('info').innerText='QR untuk: '+data;
+ let dl=document.getElementById('downloadLink'); dl.href=url; dl.style.display='block';
 }
 </script>
 </body>
