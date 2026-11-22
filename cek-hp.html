@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cek HP Saya - SMKS Al Manar</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial;background:#eef2f5;padding:12px}
+h2{text-align:center;color:#0f766e}
+.card{background:#fff;border-radius:14px;padding:14px;margin:10px 0;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+b{font-size:16px}.small{font-size:13px;color:#555}
+.bar{height:14px;background:#eee;border-radius:10px;overflow:hidden;margin:6px 0}
+.bar div{height:100%;background:#0f766e}
+button{width:100%;padding:12px;border:0;border-radius:10px;background:#0f766e;color:#fff;font-weight:700;margin-top:8px}
+input{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px;margin:6px 0}
+</style>
+</head>
+<body>
+<h2>📱 CEK HP SAYA</h2>
+<p style="text-align:center" class="small">Buat cek HP sendiri. Aman, tidak baca WA / Foto orang.</p>
+
+<div class="card">
+<b>📋 Info HP</b><br>
+<span class="small" id="infoHP">Mengecek...</span>
+</div>
+
+<div class="card">
+<b>🔋 Baterai</b><br>
+<span id="infoBaterai">Mengecek...</span>
+<div class="bar"><div id="barBaterai" style="width:0%"></div></div>
+<span class="small" id="infoCas"></span>
+</div>
+
+<div class="card">
+<b>💾 Penyimpanan (Perkiraan Browser)</b><br>
+<span id="infoSimpan">Mengecek...</span>
+<div class="bar"><div id="barSimpan" style="width:0%"></div></div>
+<p class="small">Kalau mau yang akurat, Pak. Buka: Pengaturan > Penyimpanan. Di situ kelihatan foto berapa GB, aplikasi berapa GB.</p>
+</div>
+
+<div class="card">
+<b>📶 Jaringan & Layar</b><br>
+<span class="small" id="infoJaringan">Mengecek...</span>
+</div>
+
+<div class="card">
+<b>📸 Cek Kamera & File</b><br>
+<p class="small">Android tidak bolehin web ngintip galeri, Pak. Jadi kita cek manual aja, Pak.</p>
+<button onclick="document.getElementById('fileCek').click()">📂 Pilih File di HP Untuk Di Cek</button>
+<input type="file" id="fileCek" multiple style="display:none" onchange="cekFile(this)">
+<div id="hasilFile" class="small"></div>
+</div>
+
+<div class="card">
+<b>🧹 Saran Biar HP Enteng</b><br>
+<span class="small">
+1. Hapus aplikasi yang tidak dipakai, Pak.<br>
+2. Hapus foto / video yang dobel, Pak.<br>
+3. Buka Pengaturan > Aplikasi > Lihat yang paling besar, Pak.<br>
+4. Restart HP 1x seminggu, Pak.
+</span>
+</div>
+
+<script>
+document.getElementById('infoHP').innerHTML =
+'HP / Browser: ' + navigator.userAgent + '<br>' +
+'Lebar Layar: ' + screen.width + ' x ' + screen.height + '<br>' +
+'RAM (Perkiraan): ' + (navigator.deviceMemory || 'Tidak bisa dibaca') + ' GB<br>' +
+'CPU: ' + (navigator.hardwareConcurrency || '-') + ' inti<br>' +
+'Bahasa: ' + navigator.language;
+
+if(navigator.getBattery){
+  navigator.getBattery().then(b=>{
+    function update(){
+      document.getElementById('infoBaterai').innerText = Math.round(b.level*100) + '%';
+      document.getElementById('barBaterai').style.width = (b.level*100) + '%';
+      document.getElementById('infoCas').innerText = b.charging ? '🔌 Lagi di cas' : '🔋 Tidak di cas';
+    }
+    update(); b.addEventListener('levelchange',update); b.addEventListener('chargingchange',update);
+  });
+} else { document.getElementById('infoBaterai').innerText = 'HP ini tidak bisa baca baterai dari web.'; }
+
+if(navigator.storage && navigator.storage.estimate){
+  navigator.storage.estimate().then(e=>{
+    let pakai = (e.usage/1024/1024).toFixed(1);
+    let total = (e.quota/1024/1024).toFixed(1);
+    document.getElementById('infoSimpan').innerText = 'Dipakai browser: ' + pakai + ' MB dari ' + total + ' MB';
+    document.getElementById('barSimpan').style.width = Math.min(100, (e.usage/e.quota*100)) + '%';
+  });
+}
+
+document.getElementById('infoJaringan').innerHTML =
+'Online: ' + (navigator.onLine ? 'Ya' : 'Tidak') + '<br>' +
+'Jenis Jaringan: ' + (navigator.connection ? navigator.connection.effectiveType : 'Tidak bisa dibaca') + '<br>' +
+'Kecepatan: ' + (navigator.connection ? navigator.connection.downlink + ' Mbps' : '-');
+
+function cekFile(input){
+  let out = '';
+  for(let f of input.files){
+    out += '📄 ' + f.name + ' - ' + (f.size/1024/1024).toFixed(2) + ' MB - ' + f.type + '<br>';
+  }
+  document.getElementById('hasilFile').innerHTML = out || 'Tidak ada file';
+}
+</script>
+</body>
+</html>
