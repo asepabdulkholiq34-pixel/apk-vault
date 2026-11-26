@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peta Sekolah - Pak Guru</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+*{box-sizing:border-box} body{font-family:Arial,sans-serif;margin:0;background:#0f172a;color:white}
+.top{padding:12px;text-align:center} .top h1{font-size:20px;margin:0} .top p{font-size:12px;color:#94a3b8;margin:4px 0 0}
+#map{height:55vh;width:100%}
+.box{background:#1e293b;margin:10px;border-radius:14px;padding:12px}
+input,select,textarea,button{width:100%;padding:11px;border-radius:10px;border:none;font-size:14px;margin-top:8px}
+input,select,textarea{background:white;color:#111} button{background:#22c55e;color:white;font-weight:bold;cursor:pointer}
+button.blue{background:#3b82f6} button.grey{background:#475569} button.red{background:#ef4444}
+.item{background:#334155;padding:10px;border-radius:10px;margin-top:8px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.item b{font-size:14px} .item span{font-size:12px;color:#cbd5e1;display:block}
+.btns{display:flex;gap:6px} .btns button{width:auto;padding:8px 10px;font-size:12px;margin:0}
+.chip{display:inline-block;background:#475569;padding:6px 10px;border-radius:20px;font-size:12px;margin:2px;cursor:pointer}
+.chip.on{background:#22c55e}
+</style>
+</head>
+<body>
+<div class="top"><h1>🗺️ Peta Sekolah & Kunjungan</h1><p>Tap Peta untuk Tambah Titik • Klik Titik untuk Lihat Info</p></div>
+<div id="map"></div>
+
+<div class="box">
+<b>🔍 Cari Lokasi</b>
+<div>
+<span class="chip on" onclick="gantiMode('sekolah',this)">🏫 Peta Sekolah</span>
+<span class="chip" onclick="gantiMode('tour',this)">🚌 Peta Study Tour</span>
+</div>
+<input id="cari" placeholder="Cari: Masjid, Kelas 11, Kantin...">
+<button class="blue" onclick="cariTitik()">Cari Titik</button>
+<button onclick="lokasiSaya()">📍 Lokasi Saya Sekarang</button>
+<button class="grey" onclick="bukaGoogleMap()">Buka di Google Maps ➜</button>
+</div>
+
+<div class="box">
+<b>➕ Tambah Titik Baru</b>
+<p style="font-size:12px;color:#cbd5e1;margin:4px 0">Caranya: Tap / Klik di peta dulu, nanti koordinatnya keisi otomatis, Pak.</p>
+<input id="nama" placeholder="Nama Titik, contoh: Masjid Sekolah">
+<select id="ikon"><option>🕌 Masjid</option><option>🏫 Kelas</option><option>⚽ Lapangan</option><option>🍽️ Kantin</option><option>🚪 Gerbang</option><option>📚 Perpustakaan</option><option>🚌 Halte / Parkir</option><option>📍 Titik Lain</option></select>
+<textarea id="info" rows="2" placeholder="Info: contoh: Sholat Dzuhur jam 12.00, Tempat wudhu di samping"></textarea>
+<input id="latlng" placeholder="Tap peta dulu, Pak - otomatis keisi" readonly>
+<button onclick="simpanTitik()">+ Simpan Titik Ini</button>
+</div>
+
+<div class="box">
+<b>📋 Daftar Titik (<span id="jml">0</span>)</b>
+<div id="list"></div>
+<button class="red" onclick="hapusSemua()">🗑 Hapus Semua Titik</button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let map=L.map('map').setView([-6.402484,106.794243],16);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+let markers=[]; let tempLatLng=null; let mode='sekolah';
+// Titik awal contoh - Bapak ganti aja, Pak
+let data=[
+{nama:'Gerbang Utama',ikon:'🚪 Gerbang',info:'Gerbang masuk siswa, buka jam 06.00 - 17.00',lat:-6.402484,lng:106.794243},
+{nama:'Masjid Sekolah',ikon:'🕌 Masjid',info:'Sholat Dzuhur & Jumat, tempat wudhu di samping',lat:-6.4018,lng:106.7950},
+{nama:'Kelas 11',ikon:'🏫 Kelas',info:'Kelas 11 - Ruang PAI di lantai 2',lat:-6.4029,lng:106.7955},
+{nama:'Lapangan',ikon:'⚽ Lapangan',info:'Upacara Senin, Olahraga',lat:-6.4035,lng:106.7935},
+{nama:'Kantin',ikon:'🍽️ Kantin',info:'Istirahat jam 09.30 & 12.00',lat:-6.4020,lng:106.7930},
+];
+function render(){
+  markers.forEach(m=>map.removeLayer(m)); markers=[];
+  document.getElementById('jml').innerText=data.length;
+  let h='';
+  data.forEach((d,i)=>{
+    let mk=L.marker([d.lat,d.lng]).addTo(map).bindPopup('<b>'+d.ikon+' '+d.nama+'</b><br>'+d.info+'<br><button onclick="ruteKe('+d.lat+','+d.lng+')" style="background:#3b82f6;color:white;border:none;padding:8px;border-radius:8px;margin-top:6px;width:100%">🧭 Rute Ke Sini</button>');
+    markers.push(mk);
+    h+='<div class="item"><div><b>'+d.ikon+' '+d.nama+'</b><span>'+d.info+'</span></div><div class="btns"><button class="blue" onclick="keTitik('+i+')">Lihat</button><button class="red" onclick="hapus('+i+')">✕</button></div></div>';
+  });
+  document.getElementById('list').innerHTML=h||'<p style="font-size:12px;color:#cbd5e1">Belum ada titik, Pak.</p>';
+}
+function keTitik(i){ map.setView([data[i].lat,data[i].lng],18); markers[i].openPopup(); }
+function hapus(i){ if(confirm('Hapus '+data[i].nama+'?')){data.splice(i,1); render();} }
+function hapusSemua(){ if(confirm('Hapus semua, Pak?')){data=[]; render();} }
+map.on('click',function(e){ tempLatLng=e.latlng; document.getElementById('latlng').value=e.latlng.lat.toFixed(6)+', '+e.latlng.lng.toFixed(6); alert('Titik dipilih, Pak! Tinggal isi Nama & Info, terus pencet Simpan.'); });
+function simpanTitik(){
+  let n=document.getElementById('nama').value.trim(); if(!n||!tempLatLng){alert('Isi nama & tap peta dulu, Pak!');return;}
+  data.push({nama:n,ikon:document.getElementById('ikon').value,info:document.getElementById('info').value||'Titik di sekolah',lat:tempLatLng.lat,lng:tempLatLng.lng});
+  document.getElementById('nama').value=''; document.getElementById('info').value=''; render(); alert('Tersimpan, Pak!');
+}
+function cariTitik(){ let q=document.getElementById('cari').value.toLowerCase(); let f=data.findIndex(d=>d.nama.toLowerCase().includes(q)); if(f>=0) keTitik(f); else alert('Nggak ketemu, Pak. Coba kata lain.'); }
+function gantiMode(m,el){ mode=m; document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); el.classList.add('on'); if(m==='tour'){ map.setView([-6.9175,107.6191],10); alert('Mode Study Tour, Pak! Sekarang Bapak bisa tambahin titik: Depok -> Bandung, dll.'); } else { map.setView([-6.402484,106.794243],16); } }
+function lokasiSaya(){ if(navigator.geolocation) navigator.geolocation.getCurrentPosition(p=>{ map.setView([p.coords.latitude,p.coords.longitude],18); L.marker([p.coords.latitude,p.coords.longitude]).addTo(map).bindPopup('<b>📍 Bapak Di Sini</b>').openPopup(); }); else alert('HP tidak support GPS, Pak'); }
+function ruteKe(lat,lng){ window.open('https://www.google.com/maps/dir/?api=1&destination='+lat+','+lng,'_blank'); }
+function bukaGoogleMap(){ let c=map.getCenter(); window.open('https://www.google.com/maps/@'+c.lat+','+c.lng+',16z','_blank'); }
+render();
+</script>
+</body>
+</html>
