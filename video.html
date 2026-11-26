@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pemutar Video - Pak Guru</title>
+<style>
+*{box-sizing:border-box} body{font-family:Arial,sans-serif;background:#0f172a;color:white;margin:0;padding:12px}
+h1{text-align:center;font-size:20px;margin:8px 0 4px} p.sub{text-align:center;color:#94a3b8;font-size:13px;margin:0 0 12px}
+.box{background:#1e293b;border-radius:14px;padding:14px;margin-bottom:12px}
+input,select,button{width:100%;padding:11px;border-radius:10px;border:none;font-size:15px;margin-top:8px}
+input{background:white;color:#111} button{background:#22c55e;color:white;font-weight:bold;cursor:pointer}
+button.blue{background:#3b82f6} button.red{background:#ef4444} button.grey{background:#475569}
+#playerWrap{background:black;border-radius:12px;overflow:hidden;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center}
+video,iframe{width:100%;height:100%;border:none}
+.controls{display:flex;gap:8px;margin-top:10px} .controls button{flex:1}
+.playlist-item{background:#334155;padding:10px;border-radius:10px;margin-top:8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.playlist-item.active{border:2px solid #22c55e;background:#14532d}
+.playlist-item span{flex:1;font-size:14px;cursor:pointer}
+.small{font-size:12px;color:#cbd5e1}
+</style>
+</head>
+<body>
+<h1>🎬 Pemutar Video Kelas</h1>
+<p class="sub">Untuk Bapak Mengajar - Bisa Offline & YouTube</p>
+
+<div class="box">
+  <b>1. Tambah Video dari HP (Offline)</b>
+  <input type="file" id="fileInput" accept="video/*">
+  <button onclick="tambahFile()">+ Tambah Video dari HP</button>
+  <div class="small">Video dari HP akan tersimpan di playlist selama aplikasi dibuka. Cocok untuk di kelas tanpa internet, Pak.</div>
+</div>
+
+<div class="box">
+  <b>2. Tambah Video dari YouTube</b>
+  <input type="text" id="ytJudul" placeholder="Judul Video, contoh: Kisah Nabi Yusuf">
+  <input type="text" id="ytLink" placeholder="Tempel Link YouTube di sini, Pak">
+  <button class="blue" onclick="tambahYT()">+ Tambah Video YouTube</button>
+</div>
+
+<div class="box">
+  <b>📺 Sedang Diputar</b>
+  <div id="judulNow" style="margin:8px 0;font-weight:bold">Belum ada video dipilih, Pak</div>
+  <div id="playerWrap"><div style="color:#94a3b8;padding:20px;text-align:center">Pilih video di bawah, Pak<br>untuk mulai memutar</div></div>
+  <div class="controls">
+    <button onclick="prevVideo()">⏮ Sebelumnya</button>
+    <button onclick="nextVideo()">Berikutnya ⏭</button>
+  </div>
+  <div class="controls">
+    <button class="grey" onclick="setSpeed(0.75)">0.75x Lambat</button>
+    <button class="grey" onclick="setSpeed(1)">1x Normal</button>
+    <button class="grey" onclick="setSpeed(1.5)">1.5x Cepat</button>
+  </div>
+  <button class="blue" onclick="fullscreen()">⛶ Fullscreen Buat Proyektor</button>
+</div>
+
+<div class="box">
+  <b>📋 Playlist Bapak (<span id="jml">0</span> video)</b>
+  <div id="list"></div>
+  <button class="red" onclick="hapusSemua()">🗑 Hapus Semua Playlist</button>
+</div>
+
+<script>
+let playlist=[]; let idx=-1;
+function tambahFile(){
+  let f=document.getElementById('fileInput').files[0];
+  if(!f){alert('Pilih dulu videonya, Pak!');return;}
+  let url=URL.createObjectURL(f);
+  playlist.push({judul:f.name, type:'file', src:url});
+  render(); playVideo(playlist.length-1);
+  document.getElementById('fileInput').value='';
+}
+function tambahYT(){
+  let j=document.getElementById('ytJudul').value.trim()||'Video YouTube';
+  let link=document.getElementById('ytLink').value.trim();
+  if(!link){alert('Tempel dulu link YouTube-nya, Pak!');return;}
+  let id='';
+  if(link.includes('v=')) id=link.split('v=')[1].split('&')[0];
+  else if(link.includes('youtu.be/')) id=link.split('youtu.be/')[1].split('?')[0];
+  else if(link.includes('shorts/')) id=link.split('shorts/')[1].split('?')[0];
+  else id=link;
+  playlist.push({judul:j, type:'yt', src:'https://www.youtube.com/embed/'+id+'?autoplay=1'});
+  render(); playVideo(playlist.length-1);
+  document.getElementById('ytJudul').value=''; document.getElementById('ytLink').value='';
+}
+function playVideo(i){
+  idx=i; let v=playlist[i]; if(!v) return;
+  document.getElementById('judulNow').innerText='▶ '+v.judul;
+  let w=document.getElementById('playerWrap');
+  if(v.type==='file') w.innerHTML='<video id="vid" src="'+v.src+'" controls autoplay playsinline></video>';
+  else w.innerHTML='<iframe src="'+v.src+'" allowfullscreen allow="autoplay; encrypted-media"></iframe>';
+  render();
+}
+function render(){
+  document.getElementById('jml').innerText=playlist.length;
+  let h='';
+  playlist.forEach((v,i)=>{
+    h+='<div class="playlist-item '+(i===idx?'active':'')+'"><span onclick="playVideo('+i+')">'+(i+1)+'. '+v.judul+' '+(v.type==='yt'?'📺 YouTube':'📱 HP')+'</span><button class="red" style="width:45px;margin:0" onclick="hapus('+i+')">✕</button></div>';
+  });
+  if(!playlist.length) h='<div class="small">Belum ada video, Pak. Tambah di atas dulu.</div>';
+  document.getElementById('list').innerHTML=h;
+}
+function nextVideo(){ if(idx<playlist.length-1) playVideo(idx+1); else alert('Udah video terakhir, Pak!'); }
+function prevVideo(){ if(idx>0) playVideo(idx-1); }
+function hapus(i){ playlist.splice(i,1); if(idx===i) idx=-1; render(); }
+function hapusSemua(){ if(confirm('Hapus semua, Pak?')){playlist=[]; idx=-1; document.getElementById('playerWrap').innerHTML='Pilih video, Pak'; render();} }
+function setSpeed(s){ let v=document.getElementById('vid'); if(v) v.playbackRate=s; else alert('Kecepatan hanya untuk video HP, Pak. YouTube diatur di dalam videonya.'); }
+function fullscreen(){ let w=document.getElementById('playerWrap'); if(w.requestFullscreen) w.requestFullscreen(); }
+render();
+</script>
+</body>
+</html>
