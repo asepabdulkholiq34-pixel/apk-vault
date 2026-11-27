@@ -300,24 +300,27 @@ async function cariFasilitas(tipe,nama,btn){
  document.querySelectorAll('.grid button').forEach(b=>b.classList.remove('on'));
  if(btn) btn.classList.add('on');
  let c=map.getCenter();
- document.getElementById('listFasilitas').innerHTML='⏳ Mencari '+nama+'... Tunggu sebentar, Pak.';
- let query=`[out:json][timeout:25];(node["amenity"="${tipe}"](around:8000,${c.lat},${c.lng});way["amenity"="${tipe}"](around:8000,${c.lat},${c.lng});relation["amenity"="${tipe}"](around:8000,${c.lat},${c.lng}););out center 30;`;
- if(tipe==='mosque') query=`[out:json][timeout:25];(node["amenity"="place_of_worship"](around:8000,${c.lat},${c.lng});way["amenity"="place_of_worship"](around:8000,${c.lat},${c.lng}););out center 30;`;
+ let zoom=map.getZoom();
+ // Kalau zoom jauh, radius gede. Kalau zoom deket, radius kecil. Biar ketemu terus, Pak.
+ let radius = zoom>=14 ? 8000 : zoom>=11 ? 25000 : zoom>=8 ? 60000 : 100000;
+ document.getElementById('listFasilitas').innerHTML='⏳ Mencari '+nama+' di radius '+Math.round(radius/1000)+' km... Tunggu sebentar, Pak.';
+ let query=`[out:json][timeout:30];(node["amenity"="${tipe}"](around:${radius},${c.lat},${c.lng});way["amenity"="${tipe}"](around:${radius},${c.lat},${c.lng}););out center 40;`;
+ if(tipe==='mosque') query=`[out:json][timeout:30];(node["amenity"="place_of_worship"](around:${radius},${c.lat},${c.lng});way["amenity"="place_of_worship"](around:${radius},${c.lat},${c.lng}););out center 40;`;
  try{
   let res=await fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(query));
   let data=await res.json();
   fasilitasLayer.clearLayers();
   let html='<b>'+nama+' terdekat ('+data.elements.length+' ketemu):</b><br><span class="small">Pencet namanya buat liat di peta, Pak.</span>';
-  if(!data.elements.length) html+='<br><br>Tidak ketemu di radius 8 km, Pak. Coba geser petanya, Pak.';
+  if(!data.elements.length) html+='<br><br>Tidak ketemu, Pak. Coba zoom petanya lebih deket, Pak. Atau geser petanya ke kota, Pak.';
   data.elements.forEach(el=>{
     let lat=el.lat||el.center?.lat; let lng=el.lon||el.center?.lon;
     if(!lat) return;
     let nm=el.tags?.name||nama+' (tanpa nama)';
-    let m=L.marker([lat,lng]).addTo(fasilitasLayer).bindPopup('<b>'+nm+'</b><br>'+nama+'<br><button onclick="tujuanKe('+lat+','+lng+',\''+nm.replace(/'/g,'')+'\')">➡️ Jadikan Tujuan Rute</button>');
-    html+='<div class="item" onclick="map.setView(['+lat+','+lng+'],16)"><b>'+nm+'</b><br>📍 '+(el.tags?.['addr:full']||'Klik buat liat di peta')+'</div>';
+    L.marker([lat,lng]).addTo(fasilitasLayer).bindPopup('<b>'+nm+'</b><br>'+nama+'<br><button onclick="tujuanKe('+lat+','+lng+',\''+nm.replace(/'/g,'')+'\')">➡️ Jadikan Tujuan Rute</button>');
+    html+='<div class="item" onclick="map.setView(['+lat+','+lng+'],16)"><b>'+nm+'</b><br>📍 Klik buat liat di peta</div>';
   });
   document.getElementById('listFasilitas').innerHTML=html;
- }catch(e){ document.getElementById('listFasilitas').innerHTML='❌ Gagal, Pak. Internet lambat. Coba lagi, Pak.'; }
+ }catch(e){ document.getElementById('listFasilitas').innerHTML='❌ Gagal, Pak. Server SPBU-nya lagi sibuk. Coba pencet lagi sekali, Pak.'; }
 }
 function tujuanKe(lat,lng,nama){
  titikTujuan={lat:lat,lng:lng};
