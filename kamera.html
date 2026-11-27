@@ -95,7 +95,7 @@ updateTulisan();
 async function bukaKamera(){
   try{
     if(stream) stream.getTracks().forEach(t=>t.stop());
-    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:pakaiDepan?'user':'environment',width:{ideal:1280},height:{ideal:720}},audio:true}
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:pakaiDepan?'user':'environment',width:{ideal:1280},height:{ideal:720}},audio:true});
     video.srcObject=stream;
     video.style.transform=pakaiDepan?'scaleX(-1)':'scaleX(1)';
     video.style.filter=daftarFilter[filterKe];
