@@ -125,22 +125,48 @@ function jepret(){
 }
 
 // 1. REKAM VIDEO
+let canvasRekam=null, gambarUlang=null;
 function rekamVideo(){
   if(!stream){ alert('Buka kameranya dulu, Pak!'); return; }
   let btn=document.getElementById('btnRekam');
   if(!lagiRekam){
+    // Bikin kanvas buat ngerekam, Pak. Biar tulisan ikut ke-rekam, Pak
+    canvasRekam=document.createElement('canvas');
+    canvasRekam.width=video.videoWidth || 720;
+    canvasRekam.height=video.videoHeight || 1280;
+    let ctx=canvasRekam.getContext('2d');
+    gambarUlang=setInterval(()=>{
+      ctx.save();
+      if(pakaiDepan){ ctx.translate(canvasRekam.width,0); ctx.scale(-1,1); }
+      ctx.filter=daftarFilter[filterKe];
+      ctx.drawImage(video,0,0,canvasRekam.width,canvasRekam.height);
+      ctx.restore();
+      ctx.filter='none';
+      // Tempel tulisan di video, Pak. Sama kayak di foto, Pak
+      if(document.getElementById('tulisNama').checked){
+        ctx.fillStyle='rgba(0,0,0,0.65)';
+        ctx.fillRect(0,canvasRekam.height-70,canvasRekam.width,70);
+        ctx.fillStyle='white';
+        ctx.font='bold 26px Arial'; ctx.textAlign='center';
+        ctx.fillText(teksKegiatan(), canvasRekam.width/2, canvasRekam.height-28);
+      }
+    },1000/30); // 30 fps, Pak
+    let streamKanvas=canvasRekam.captureStream(30);
+    // Suara tetep dari mic, Pak
+    let mic=stream.getAudioTracks()[0];
+    if(mic) streamKanvas.addTrack(mic);
     potonganVideo=[];
-    try{ mediaRecorder=new MediaRecorder(stream,{mimeType:'video/webm'}); }
-    catch(e){ mediaRecorder=new MediaRecorder(stream); }
+    try{ mediaRecorder=new MediaRecorder(streamKanvas,{mimeType:'video/webm'}); }
+    catch(e){ mediaRecorder=new MediaRecorder(streamKanvas); }
     mediaRecorder.ondataavailable=e=>{ if(e.data.size>0) potonganVideo.push(e.data); };
     mediaRecorder.onstop=()=>{
+      clearInterval(gambarUlang);
       let blob=new Blob(potonganVideo,{type:'video/webm'});
       let url=URL.createObjectURL(blob);
-      // Simpan dengan nama kegiatan, Pak
       let div=document.createElement('div'); div.className='foto';
       div.innerHTML='<video src="'+url+'" controls></video><small>Video - '+teksKegiatan()+'</small><a href="'+url+'" download="Video-'+Date.now()+'.webm">⬇ Simpan Video</a>';
       document.getElementById('galeri').prepend(div);
-      info.innerText='Video selesai, Pak! Pencet Simpan Video, Pak.';
+      info.innerText='Video selesai, Pak! Udah ada tulisannya sekarang, Pak!';
     };
     mediaRecorder.start(); lagiRekam=true;
     btn.innerText='⏹ Stop Rekam'; btn.style.background='#7f1d1d';
