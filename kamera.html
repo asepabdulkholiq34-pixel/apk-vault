@@ -143,13 +143,21 @@ function rekamVideo(){
       ctx.restore();
       ctx.filter='none';
       // Tempel tulisan di video, Pak. Sama kayak di foto, Pak
-      if(document.getElementById('tulisNama').checked){
-        ctx.fillStyle='rgba(0,0,0,0.65)';
-        ctx.fillRect(0,canvasRekam.height-70,canvasRekam.width,70);
-        ctx.fillStyle='white';
-        ctx.font='bold 26px Arial'; ctx.textAlign='center';
-        ctx.fillText(teksKegiatan(), canvasRekam.width/2, canvasRekam.height-28);
-      }
+            // Bar-nya dibikin lebih tinggi, Pak. Buat 2 baris, Pak
+      ctx.fillStyle='black';
+      ctx.fillRect(0,canvasRekam.height-160,canvasRekam.width,160);
+      ctx.fillStyle='yellow';
+      ctx.textAlign='center';
+      // Baris 1: Nama + Kelas, Pak
+      let nama1 = document.getElementById('namaKegiatan').value || 'Kegiatan Kelas';
+      let kelas1 = document.getElementById('kelasKegiatan').value || '';
+      let tgl1 = new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+      ctx.font='bold 30px Arial';
+      ctx.fillText(nama1 + ' - ' + kelas1, canvasRekam.width/2, canvasRekam.height-95);
+      // Baris 2: Tanggalnya, Pak
+      ctx.fillStyle='white';
+      ctx.font='bold 26px Arial';
+      ctx.fillText(tgl1, canvasRekam.width/2, canvasRekam.height-45);
     },1000/30); // 30 fps, Pak
     let streamKanvas=canvasRekam.captureStream(30);
     // Suara tetep dari mic, Pak
