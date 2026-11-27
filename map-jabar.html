@@ -1,14 +1,33 @@
 <!DOCTYPE html>
 <html lang="id"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MAP JABAR - Real Time + Rute + Fasilitas</title>
+<title>MAP JABAR - Real Time + Kompas + Map Diam</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 *{box-sizing:border-box}body{margin:0;font-family:Arial;background:#eef2f5}
-.header{background:#166534;color:#fff;padding:12px;text-align:center}
+.header{background:#166534;color:#fff;padding:12px;text-align:center;position:sticky;top:0;z-index:1000}
 .header h2{margin:0;font-size:18px}.header p{margin:3px 0 0;font-size:12px;opacity:.9}
-#map{height:52vh;width:100%;z-index:1}
+
+/* === MAP DIAM DI ATAS - INI KUNCINYA, PAK === */
+.map-wrap{position:sticky;top:58px;z-index:999;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+#map{height:46vh;width:100%;z-index:1}
+
+/* === KOMPAS ARAH MATA ANGIN === */
+.kompas{position:absolute;top:10px;right:10px;z-index:1000;width:86px;height:86px;background:rgba(255,255,255,.95);border-radius:50%;box-shadow:0 2px 10px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;text-align:center;border:2px solid #166534}
+.kompas-dalam{position:relative;width:100%;height:100%}
+.kompas .huruf{position:absolute;font-weight:800;font-size:12px}
+.kompas .U{top:4px;left:50%;transform:translateX(-50%);color:#dc2626}
+.kompas .S{bottom:4px;left:50%;transform:translateX(-50%);color:#333}
+.kompas .B{left:5px;top:50%;transform:translateY(-50%);color:#333}
+.kompas .T{right:5px;top:50%;transform:translateY(-50%);color:#333}
+#jarum{position:absolute;top:50%;left:50%;width:0;height:0;transform:translate(-50%,-50%);transition:transform .3s}
+#jarum::before{content:'▲';position:absolute;top:-28px;left:-7px;font-size:16px;color:#dc2626}
+#jarum::after{content:'▼';position:absolute;top:8px;left:-7px;font-size:14px;color:#2563eb}
+#arahTxt{position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:800;background:#166534;color:#fff;padding:2px 7px;border-radius:10px;white-space:nowrap}
+.tombol-kompas{position:absolute;bottom:10px;right:10px;z-index:1000;background:#fff;border:2px solid #166534;color:#166534;font-weight:800;font-size:11px;padding:7px 10px;border-radius:20px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.tombol-kompas.on{background:#166534;color:#fff}
+
 .panel{background:#fff;padding:12px}
 input,select{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px;margin:5px 0;font-size:14px}
 .btn{background:#166534;color:#fff;border:0;padding:11px;border-radius:10px;font-weight:700;width:100%;cursor:pointer;margin-top:6px}
@@ -23,11 +42,28 @@ input,select{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px;ma
 #listFasilitas{max-height:200px;overflow:auto}
 .item{border-bottom:1px solid #eee;padding:8px 0;font-size:13px;cursor:pointer}
 .item b{color:#166534}
+.info-kompas{background:#eff6ff;padding:8px 10px;border-radius:10px;font-size:12px;text-align:center;margin-top:6px}
 </style></head>
 <body>
 <div class="header"><h2>🗺️ MAP JAWA BARAT - REAL TIME</h2><p>Rute Perjalanan + Fasilitas Umum | SMKS AL MANAR</p></div>
 
+<!-- MAP + KOMPAS - DIAM DI ATAS -->
+<div class="map-wrap">
 <div id="map"></div>
+
+<!-- KOMPAS -->
+<div class="kompas" title="Arah Mata Angin">
+<div class="kompas-dalam">
+<span class="huruf U">U</span><span class="huruf S">S</span>
+<span class="huruf B">B</span><span class="huruf T">T</span>
+<div id="jarum"></div>
+<div id="arahTxt">UTARA</div>
+</div>
+</div>
+<button id="btnKompas" class="tombol-kompas" onclick="aktifkanKompas()">🧭 Aktifkan Kompas HP</button>
+</div>
+
+<div class="info-kompas">🧭 <b>Kompas:</b> <span id="derajatTxt">0° - Utara</span> | Map di atas sudah dikunci, Pak. Di-scroll ke bawah, map tetap di sini, Pak.</div>
 
 <div class="panel">
 <b>📍 Lokasi Bapak:</b> <span id="lokasiTxt">Belum aktif - Pencet tombol Lokasi Saya</span><br>
@@ -35,7 +71,7 @@ input,select{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px;ma
 <span class="badge" id="akurasiTxt">Akurasi: -</span>
 <span class="badge" id="jamTxt">Update: -</span>
 <br><br>
-<input id="cari" placeholder="🔍 Cari tempat di Jabar... Contoh: Cibeber, Ragunan, Bandung, Bogor">
+<input id="cari" placeholder="🔍 Cari tempat di Jabar... Contoh: Cibeber, Bandung, Bogor">
 <button class="btn btn2" onclick="cariTempat()">🔍 Cari Tempat</button>
 <button class="btn" onclick="lokasiSaya()">📍 Lokasi Saya (Real Time)</button>
 <button class="btn btn3" onclick="stopRealTime()">⏹️ Stop Real Time</button>
@@ -61,7 +97,7 @@ input,select{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px;ma
 
 <div class="card">
 <h3 style="margin:0">🏥 FASILITAS UMUM DI SEKITAR</h3>
-<p class="small">Pencet salah satu, Pak. Nanti muncul di peta, Pak. Di sekitar lokasi peta sekarang.</p>
+<p class="small">Pencet salah satu, Pak. Nanti muncul di peta, Pak.</p>
 <div class="grid">
 <button onclick="cariFasilitas('hospital','🏥 Rumah Sakit',this)">🏥 Rumah Sakit</button>
 <button onclick="cariFasilitas('clinic','🩺 Puskesmas / Klinik',this)">🩺 Puskesmas</button>
@@ -95,16 +131,61 @@ input,select{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px;ma
 <button onclick="pindahKota(-6.2000,106.8000,'Bekasi')">Bekasi</button>
 <button onclick="pindahKota(-6.9170,106.5500,'Pelabuhan Ratu')">Pelabuhan Ratu</button>
 </div>
-<p class="small">Map ini pakai OpenStreetMap, Pak. Gratis. Bukan Google Maps, tapi jalannya sama, Pak. Untuk jalan beneran, Bapak bisa pencet "Buka di Google Maps" di hasil rute, Pak.</p>
+<p class="small">Map ini pakai OpenStreetMap, Pak. Gratis. Untuk jalan beneran, Bapak bisa pencet "Buka di Google Maps" di hasil rute, Pak.</p>
 </div>
 
 <script>
-let map=L.map('map').setView([-6.9147,107.6098],10);
+let map=L.map('map',{scrollWheelZoom:false}).setView([-6.9147,107.6098],10);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+// Biar map nggak ikut ke-scroll pas Bapak scroll halaman, Pak. Zoom-nya pake tombol + - aja, Pak.
+// Kalau mau zoom pake jari, pencet map-nya dulu 1x, Pak.
+map.on('click',()=>{ map.scrollWheelZoom.enable(); });
+map.on('mouseout',()=>{ map.scrollWheelZoom.disable(); });
 
 let markerSaya=null, watchId=null, routeLayer=null, fasilitasLayer=L.layerGroup().addTo(map);
 let titikAwal=null, titikTujuan=null, markerA=null, markerB=null;
 
+// ===== KOMPAS =====
+let kompasAktif=false;
+function namaArah(deg){
+ if(deg>=337.5||deg<22.5) return 'UTARA';
+ if(deg<67.5) return 'TIMUR LAUT';
+ if(deg<112.5) return 'TIMUR';
+ if(deg<157.5) return 'TENGGARA';
+ if(deg<202.5) return 'SELATAN';
+ if(deg<247.5) return 'BARAT DAYA';
+ if(deg<292.5) return 'BARAT';
+ return 'BARAT LAUT';
+}
+function putarKompas(deg){
+ document.getElementById('jarum').style.transform='translate(-50%,-50%) rotate('+deg+'deg)';
+ let nama=namaArah(deg);
+ document.getElementById('arahTxt').innerText=nama;
+ document.getElementById('derajatTxt').innerText=Math.round(deg)+'° - '+nama;
+}
+function aktifkanKompas(){
+ let btn=document.getElementById('btnKompas');
+ // iPhone minta izin
+ if(typeof DeviceOrientationEvent!=='undefined' && typeof DeviceOrientationEvent.requestPermission==='function'){
+   DeviceOrientationEvent.requestPermission().then(res=>{
+     if(res==='granted'){ mulaiKompas(); btn.innerText='🧭 Kompas Aktif ✅'; btn.classList.add('on'); }
+     else alert('Izin kompas ditolak, Pak. Coba lagi, Pak.');
+   }).catch(()=>alert('HP Bapak belum dukung kompas, Pak.'));
+ } else {
+   mulaiKompas(); btn.innerText='🧭 Kompas Aktif ✅'; btn.classList.add('on');
+ }
+}
+function mulaiKompas(){
+ kompasAktif=true;
+ window.addEventListener('deviceorientation', (e)=>{
+   let deg=e.alpha;
+   if(deg==null) return;
+   // alpha = arah HP, dibalik biar jarum nunjuk Utara beneran
+   putarKompas(360-deg);
+ });
+ // Tes: kalau HP diam, kompas tetap nunjuk Utara (0°), Pak.
+ putarKompas(0);
+}
 function pindahKota(lat,lng,nama){ map.setView([lat,lng],13); L.popup().setLatLng([lat,lng]).setContent('<b>'+nama+'</b>').openOn(map); }
 
 function lokasiSaya(){
@@ -134,11 +215,13 @@ function updateLokasi(pos){
  document.getElementById('jamTxt').innerText='Update: '+new Date().toLocaleTimeString('id-ID');
  if(markerSaya) map.removeLayer(markerSaya);
  markerSaya=L.marker([lat,lng]).addTo(map).bindPopup('<b>📍 Bapak di sini</b><br>Kecepatan: '+kecepatan).openPopup();
- // Ikutin peta kalau real time jalan
  if(watchId!==null) map.panTo([lat,lng]);
+ // Kalau Bapak jalan, kompas ikut arah jalan (dari GPS)
+ if(pos.coords.heading!=null && !isNaN(pos.coords.heading) && pos.coords.speed>1){
+   putarKompas(pos.coords.heading);
+ }
 }
 
-// Klik peta = tentuin rute
 map.on('click',function(e){
  if(!titikAwal){
    titikAwal=e.latlng;
@@ -152,7 +235,6 @@ map.on('click',function(e){
    document.getElementById('keTxt').value=e.latlng.lat.toFixed(5)+', '+e.latlng.lng.toFixed(5);
    buatRute();
  } else {
-   // Klik ke-3 = ulang dari awal
    hapusRute(); titikAwal=e.latlng;
    markerA=L.marker(e.latlng,{icon:L.divIcon({html:'<div style="background:#22c55e;color:#fff;padding:6px 10px;border-radius:50%;font-weight:700">A</div>'})}).addTo(map).bindPopup('Titik Awal').openPopup();
    document.getElementById('dariTxt').value=e.latlng.lat.toFixed(5)+', '+e.latlng.lng.toFixed(5);
@@ -167,25 +249,21 @@ async function cariTempat(){
  map.setView([data[0].lat,data[0].lon],15);
  L.marker([data[0].lat,data[0].lon]).addTo(map).bindPopup('<b>'+data[0].display_name+'</b>').openPopup();
 }
-
 async function geocode(teks){
  let res=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(teks+', Jawa Barat, Indonesia'));
  let data=await res.json(); if(!data.length) return null;
  return {lat:parseFloat(data[0].lat), lng:parseFloat(data[0].lon)};
 }
-
 async function buatRuteDariTeks(){
  let dari=document.getElementById('dariTxt').value;
  let ke=document.getElementById('keTxt').value;
  if(!dari||!ke) return alert('Isi Dari dan Ke dulu, Pak. Atau klik peta, Pak.');
- // Kalau isinya koordinat
  if(dari.includes(',')){ let p=dari.split(','); titikAwal={lat:parseFloat(p[0]),lng:parseFloat(p[1])}; }
  else { titikAwal=await geocode(dari); if(!titikAwal) return alert('Titik awal tidak ketemu, Pak.'); }
  if(ke.includes(',')){ let p=ke.split(','); titikTujuan={lat:parseFloat(p[0]),lng:parseFloat(p[1])}; }
  else { titikTujuan=await geocode(ke); if(!titikTujuan) return alert('Tujuan tidak ketemu, Pak.'); }
  buatRute();
 }
-
 async function buatRute(){
  if(!titikAwal||!titikTujuan) return;
  let mode=document.getElementById('modeRute').value;
@@ -218,15 +296,12 @@ function hapusRute(){
  document.getElementById('dariTxt').value=''; document.getElementById('keTxt').value='';
  document.getElementById('hasilRute').style.display='none'; document.getElementById('petunjuk').innerHTML='';
 }
-
-// Fasilitas Umum via Overpass API
 async function cariFasilitas(tipe,nama,btn){
  document.querySelectorAll('.grid button').forEach(b=>b.classList.remove('on'));
  if(btn) btn.classList.add('on');
  let c=map.getCenter();
  document.getElementById('listFasilitas').innerHTML='⏳ Mencari '+nama+'... Tunggu sebentar, Pak.';
  let query=`[out:json][timeout:25];(node["amenity"="${tipe}"](around:8000,${c.lat},${c.lng});way["amenity"="${tipe}"](around:8000,${c.lat},${c.lng});relation["amenity"="${tipe}"](around:8000,${c.lat},${c.lng}););out center 30;`;
- // Khusus masjid pakai amenity=place_of_worship + religion muslim, disederhanakan jadi amenity
  if(tipe==='mosque') query=`[out:json][timeout:25];(node["amenity"="place_of_worship"](around:8000,${c.lat},${c.lng});way["amenity"="place_of_worship"](around:8000,${c.lat},${c.lng}););out center 30;`;
  try{
   let res=await fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(query));
@@ -247,7 +322,6 @@ async function cariFasilitas(tipe,nama,btn){
 function tujuanKe(lat,lng,nama){
  titikTujuan={lat:lat,lng:lng};
  document.getElementById('keTxt').value=nama;
- // Kalau titik awal belum ada, pakai lokasi saya
  if(!titikAwal && markerSaya){
    let ll=markerSaya.getLatLng(); titikAwal={lat:ll.lat,lng:ll.lng};
    document.getElementById('dariTxt').value='Lokasi Saya';
