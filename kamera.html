@@ -10,7 +10,7 @@ h2{text-align:center;margin:6px 0 2px} p{text-align:center;color:#cbd5e1;font-si
 input,select{width:100%;padding:11px;border-radius:10px;border:1px solid #334155;background:#1e293b;color:white;margin-bottom:8px}
 #box{position:relative;border-radius:16px;overflow:hidden;background:black;max-width:520px;margin:0 auto}
 video{width:100%;display:block;transform:scaleX(-1)}
-#tulisan{position:absolute;left:0;right:0;bottom:8px;text-align:center;background:rgba(0,0,0,.65);padding:8px;font-weight:bold;font-size:15px;pointer-events:none}
+#tulisan{position:absolute;left:0;right:0;top:8px;text-align:center;background:rgba(0,0,0,.65);padding:8px;font-weight:bold;font-size:15px;pointer-events:none}
 #flash{position:absolute;inset:0;background:white;opacity:0;pointer-events:none}
 #kotakQR{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:220px;height:220px;border:3px solid #22c55e;border-radius:14px;display:none;pointer-events:none}
 .row{display:flex;gap:8px;max-width:520px;margin:10px auto}
@@ -22,52 +22,43 @@ button{flex:1;padding:13px;border:0;border-radius:12px;font-weight:bold;font-siz
 .foto small{display:block;text-align:center;color:#cbd5e1;margin:5px 0}
 .foto a{display:block;text-align:center;background:#22c55e;color:white;padding:8px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:13px;margin-bottom:6px}
 #hasilQR{background:#052e16;border:1px solid #22c55e;border-radius:12px;padding:12px;max-width:520px;margin:10px auto;display:none;white-space:pre-wrap;word-break:break-all}
-  button{ touch-action:manipulation; }
+button{ touch-action:manipulation; }
+.kontrol-kamera{position:absolute;bottom:8px;left:0;right:0;display:flex;flex-direction:column;gap:6px;padding:0 8px;z-index:20}
+.kontrol-kamera .row{margin:0;max-width:none}
+.kontrol-kamera button{padding:10px 8px;font-size:13px}
 </style>
 </head>
 <body>
-
 <h2>📸 Kamera Kelas Lengkap</h2>
 <p>Foto + Video + Nama Otomatis + Scan QR, Pak.</p>
-
-<!-- 2. TULIS NAMA DI FOTO, PAK -->
 <input id="namaKegiatan" placeholder="Nama Kegiatan, contoh: Ulangan Tauhid" value="Kegiatan Kelas">
 <input id="kelasKegiatan" placeholder="Kelas, contoh: Kelas 11" value="Kelas 11">
 <label style="font-size:13px"><input type="checkbox" id="tulisNama" checked style="width:auto"> Tulis nama otomatis di foto & video, Pak</label>
-
 <div id="box">
   <video id="kamera" autoplay playsinline muted></video>
   <div id="tulisan">Kegiatan Kelas - Kelas 11</div>
   <div id="kotakQR"></div>
   <div id="flash"></div>
+  <div class="kontrol-kamera">
+    <div class="row">
+      <button class="biru" onclick="bukaKamera()">📷 Buka Kamera</button>
+      <button class="kuning" onclick="gantiKamera()">🔄 Depan / Belakang</button>
+    </div>
+    <div class="row">
+      <button class="hijau" onclick="jepret()">📸 JEPRET</button>
+      <button class="merah" id="btnRekam" onclick="rekamVideo()">🔴 Rekam Video</button>
+      <button class="abu" onclick="gantiFilter()">🎨 Filter</button>
+    </div>
+  </div>
 </div>
-
-<div class="row">
-  <button class="biru" onclick="bukaKamera()">📷 Buka Kamera</button>
-  <button class="kuning" onclick="gantiKamera()">🔄 Depan / Belakang</button>
-</div>
-
-<div class="row">
-  <button class="hijau" onclick="jepret()" style="font-size:18px">📸 JEPRET FOTO</button>
-</div>
-
-<!-- 1. REKAM VIDEO, PAK -->
-<div class="row">
-  <button class="merah" id="btnRekam" onclick="rekamVideo()">🔴 Mulai Rekam Video</button>
-  <button class="abu" onclick="gantiFilter()">🎨 Filter</button>
-</div>
-
-<!-- 3. SCAN QR, PAK -->
 <div class="row">
   <button class="ungu" onclick="mulaiScan()">📷 Scan QR / Barcode</button>
   <button class="abu" onclick="stopScan()">⏹ Stop Scan</button>
 </div>
-
 <p id="info">Kamera belum dibuka, Pak. Pencet Buka Kamera, Pak.</p>
 <div id="hasilQR"></div>
 <div id="galeri"></div>
 <canvas id="canvas" style="display:none"></canvas>
-
 <script>
 let stream=null, pakaiDepan=true, filterKe=0;
 let daftarFilter=['','grayscale(1)','sepia(0.8)','contrast(1.3) brightness(1.1)','saturate(1.8)'];
@@ -75,7 +66,6 @@ let namaFilter=['Normal','Hitam Putih','Jadul','Terang','Warna Ngejreng'];
 let video=document.getElementById('kamera');
 let info=document.getElementById('info');
 let mediaRecorder=null, potonganVideo=[], lagiRekam=false, lagiScan=false, scanInterval=null;
-
 function teksKegiatan(){
   let nama=document.getElementById('namaKegiatan').value||'Kegiatan Kelas';
   let kelas=document.getElementById('kelasKegiatan').value||'';
@@ -91,7 +81,6 @@ document.getElementById('namaKegiatan').oninput=updateTulisan;
 document.getElementById('kelasKegiatan').oninput=updateTulisan;
 document.getElementById('tulisNama').onchange=updateTulisan;
 updateTulisan();
-
 async function bukaKamera(){
   try{
     if(stream) stream.getTracks().forEach(t=>t.stop());
@@ -104,8 +93,6 @@ async function bukaKamera(){
 }
 function gantiKamera(){ pakaiDepan=!pakaiDepan; bukaKamera(); }
 function gantiFilter(){ filterKe=(filterKe+1)%daftarFilter.length; video.style.filter=daftarFilter[filterKe]; info.innerText='Filter: '+namaFilter[filterKe]+', Pak.'; }
-
-// FOTO + NAMA OTOMATIS
 function jepret(){
   if(!stream){ alert('Buka kameranya dulu, Pak!'); return; }
   let canvas=document.getElementById('canvas');
@@ -124,14 +111,11 @@ function jepret(){
   tambahKeGaleri(canvas.toDataURL('image/jpeg',0.9),'foto');
   info.innerText='Dijepret, Pak! Udah ada tulisannya, Pak.';
 }
-
-// 1. REKAM VIDEO
 let canvasRekam=null, gambarUlang=null;
 function rekamVideo(){
   if(!stream){ alert('Buka kameranya dulu, Pak!'); return; }
   let btn=document.getElementById('btnRekam');
   if(!lagiRekam){
-    // Bikin kanvas buat ngerekam, Pak. Biar tulisan ikut ke-rekam, Pak
     canvasRekam=document.createElement('canvas');
     canvasRekam.width=video.videoWidth || 720;
     canvasRekam.height=video.videoHeight || 1280;
@@ -143,25 +127,20 @@ function rekamVideo(){
       ctx.drawImage(video,0,0,canvasRekam.width,canvasRekam.height);
       ctx.restore();
       ctx.filter='none';
-      // Tempel tulisan di video, Pak. Sama kayak di foto, Pak
-            // Bar-nya dibikin lebih tinggi, Pak. Buat 2 baris, Pak
       ctx.fillStyle='black';
       ctx.fillRect(0,canvasRekam.height-160,canvasRekam.width,160);
       ctx.fillStyle='yellow';
       ctx.textAlign='center';
-      // Baris 1: Nama + Kelas, Pak
       let nama1 = document.getElementById('namaKegiatan').value || 'Kegiatan Kelas';
       let kelas1 = document.getElementById('kelasKegiatan').value || '';
       let tgl1 = new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
       ctx.font='bold 30px Arial';
       ctx.fillText(nama1 + ' - ' + kelas1, canvasRekam.width/2, canvasRekam.height-95);
-      // Baris 2: Tanggalnya, Pak
       ctx.fillStyle='white';
       ctx.font='bold 26px Arial';
       ctx.fillText(tgl1, canvasRekam.width/2, canvasRekam.height-45);
-    },1000/30); // 30 fps, Pak
+    },1000/30);
     let streamKanvas=canvasRekam.captureStream(30);
-    // Suara tetep dari mic, Pak
     let mic=stream.getAudioTracks()[0];
     if(mic) streamKanvas.addTrack(mic);
     potonganVideo=[];
@@ -182,11 +161,9 @@ function rekamVideo(){
     info.innerText='🔴 LAGI NGEREKAM, Pak... Pencet Stop kalau udah, Pak.';
   } else {
     mediaRecorder.stop(); lagiRekam=false;
-    btn.innerText='🔴 Mulai Rekam Video'; btn.style.background='#ef4444';
+    btn.innerText='🔴 Rekam Video'; btn.style.background='#ef4444';
   }
 }
-
-// 3. SCAN QR / BARCODE
 async function mulaiScan(){
   if(!stream) await bukaKamera();
   if(!('BarcodeDetector' in window)){
@@ -212,7 +189,6 @@ async function mulaiScan(){
           else { navigator.clipboard.writeText(isi); alert('Udah disalin, Pak: '+isi); }
         };
         info.innerText='Ketemu, Pak! Hasilnya di kotak hijau bawah, Pak.';
-        // Bunyi beep, Pak
         try{ let a=new AudioContext(); let o=a.createOscillator(); o.connect(a.destination); o.start(); setTimeout(()=>o.stop(),150); }catch(e){}
       }
     }catch(e){}
@@ -230,7 +206,6 @@ function tambahKeGaleri(data,tipe){
   div.innerHTML='<img src="'+data+'"><small>'+tgl+' - '+teksKegiatan()+'</small><a href="'+data+'" download="Foto-'+Date.now()+'.jpg">⬇ Simpan ke HP</a><button class="merah" style="width:100%;margin-top:6px;padding:10px;border:0;border-radius:8px;color:white" onclick="this.parentElement.remove()">Hapus</button>';
   galeri.prepend(div);
 }
-  // AUTO MATI PAS KELUAR, Pak
 function matikanKameraOtomatis(){
   try{ stopScan(); }catch(e){}
   try{
