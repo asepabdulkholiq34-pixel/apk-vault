@@ -230,6 +230,21 @@ function tambahKeGaleri(data,tipe){
   div.innerHTML='<img src="'+data+'"><small>'+tgl+' - '+teksKegiatan()+'</small><a href="'+data+'" download="Foto-'+Date.now()+'.jpg">⬇ Simpan ke HP</a><button class="merah" style="width:100%;margin-top:6px;padding:10px;border:0;border-radius:8px;color:white" onclick="this.parentElement.remove()">Hapus</button>';
   galeri.prepend(div);
 }
+  // AUTO MATI PAS KELUAR, Pak
+function matikanKameraOtomatis(){
+  try{ stopScan(); }catch(e){}
+  try{
+    let v=document.querySelector('video');
+    if(v && v.srcObject){
+      v.srcObject.getTracks().forEach(function(t){ t.stop(); });
+      v.srcObject=null;
+    }
+  }catch(e){}
+}
+window.addEventListener('pagehide', matikanKameraOtomatis);
+document.addEventListener('visibilitychange', function(){
+  if(document.hidden){ matikanKameraOtomatis(); }
+});
 </script>
 </body>
 </html>
