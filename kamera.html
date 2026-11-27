@@ -8,14 +8,14 @@
 *{box-sizing:border-box} body{margin:0;font-family:Arial;background:#0f172a;color:white;padding:12px}
 h2{text-align:center;margin:6px 0 2px} p{text-align:center;color:#cbd5e1;font-size:13px;margin:0 0 10px}
 input,select{width:100%;padding:11px;border-radius:10px;border:1px solid #334155;background:#1e293b;color:white;margin-bottom:8px}
-#box{position:relative;border-radius:16px;overflow:hidden;background:black;max-width:520px;margin:0 auto}
-video{width:100%;display:block;transform:scaleX(-1)}
-#tulisan{position:absolute;left:0;right:0;top:8px;text-align:center;background:rgba(0,0,0,.65);padding:8px;font-weight:bold;font-size:15px;pointer-events:none}
+#box{position:relative;border-radius:16px;overflow:hidden;background:black;max-width:520px;margin:0 auto;aspect-ratio:3/4;min-height:380px}
+video{width:100%;height:100%;display:block;transform:scaleX(-1);object-fit:cover}
+#tulisan{position:absolute;left:0;right:0;top:8px;text-align:center;background:rgba(0,0,0,.65);padding:8px;font-weight:bold;font-size:15px;pointer-events:none;z-index:5}
 #flash{position:absolute;inset:0;background:white;opacity:0;pointer-events:none}
 #kotakQR{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:220px;height:220px;border:3px solid #22c55e;border-radius:14px;display:none;pointer-events:none}
 .row{display:flex;gap:8px;max-width:520px;margin:10px auto}
 button{flex:1;padding:13px;border:0;border-radius:12px;font-weight:bold;font-size:14px;cursor:pointer}
-.hijau{background:#22c55e;color:white} .biru{background:#3b82f6;color:white} .kuning{background:#f59e0b;color:black} .merah{background:#ef4444;color:white} .abu{background:#334155;color:white} .ungu{background:#a855f7;color:white}
+.hijau{background:#22c55e;color:white} .biru{background:#3b82f6;color:white} .kuning{background:#f59e0b;color:black} .merah{background:#ef4444;color:white} .abu{background:#334155;color:white} .ungu{background:#a855f7;color:white} .hitam{background:#111827;color:white}
 #galeri{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:520px;margin:14px auto}
 .foto{background:#1e293b;border-radius:12px;overflow:hidden;padding:6px}
 .foto img,.foto video{width:100%;border-radius:8px;display:block}
@@ -43,6 +43,7 @@ button{ touch-action:manipulation; }
     <div class="row">
       <button class="biru" onclick="bukaKamera()">📷 Buka Kamera</button>
       <button class="kuning" onclick="gantiKamera()">🔄 Depan / Belakang</button>
+      <button class="hitam" onclick="tutupKamera()">✖ Tutup</button>
     </div>
     <div class="row">
       <button class="hijau" onclick="jepret()">📸 JEPRET</button>
@@ -60,7 +61,8 @@ button{ touch-action:manipulation; }
 <div id="galeri"></div>
 <canvas id="canvas" style="display:none"></canvas>
 <script>
-let stream=null, pakaiDepan=true, filterKe=0;
+let stream=null, pakaiDepan=false;
+let filterKe=0;
 let daftarFilter=['','grayscale(1)','sepia(0.8)','contrast(1.3) brightness(1.1)','saturate(1.8)'];
 let namaFilter=['Normal','Hitam Putih','Jadul','Terang','Warna Ngejreng'];
 let video=document.getElementById('kamera');
@@ -82,6 +84,7 @@ document.getElementById('kelasKegiatan').oninput=updateTulisan;
 document.getElementById('tulisNama').onchange=updateTulisan;
 updateTulisan();
 async function bukaKamera(){
+  document.getElementById('box').scrollIntoView({behavior:'smooth',block:'start'});
   try{
     if(stream) stream.getTracks().forEach(t=>t.stop());
     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:pakaiDepan?'user':'environment',width:{ideal:1280},height:{ideal:720}},audio:true});
@@ -90,6 +93,13 @@ async function bukaKamera(){
     video.style.filter=daftarFilter[filterKe];
     info.innerText='Kamera nyala, Pak. Kamera: '+(pakaiDepan?'Depan':'Belakang')+' | Filter: '+namaFilter[filterKe];
   }catch(e){ alert('Kamera nggak bisa dibuka, Pak! Izinkan kamera dulu, Pak. '+e); }
+}
+function tutupKamera(){
+  try{ stopScan(); }catch(e){}
+  if(lagiRekam && mediaRecorder){ mediaRecorder.stop(); lagiRekam=false; document.getElementById('btnRekam').innerText='🔴 Rekam Video'; }
+  if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+  video.srcObject=null;
+  info.innerText='Kamera ditutup, Pak. Pencet Buka Kamera lagi kalau mau motret, Pak.';
 }
 function gantiKamera(){ pakaiDepan=!pakaiDepan; bukaKamera(); }
 function gantiFilter(){ filterKe=(filterKe+1)%daftarFilter.length; video.style.filter=daftarFilter[filterKe]; info.innerText='Filter: '+namaFilter[filterKe]+', Pak.'; }
@@ -197,7 +207,6 @@ async function mulaiScan(){
 function stopScan(){
   lagiScan=false; clearInterval(scanInterval);
   document.getElementById('kotakQR').style.display='none';
-  if(lagiScan) info.innerText='Scan berhenti, Pak.';
 }
 function tambahKeGaleri(data,tipe){
   let galeri=document.getElementById('galeri');
@@ -206,20 +215,9 @@ function tambahKeGaleri(data,tipe){
   div.innerHTML='<img src="'+data+'"><small>'+tgl+' - '+teksKegiatan()+'</small><a href="'+data+'" download="Foto-'+Date.now()+'.jpg">⬇ Simpan ke HP</a><button class="merah" style="width:100%;margin-top:6px;padding:10px;border:0;border-radius:8px;color:white" onclick="this.parentElement.remove()">Hapus</button>';
   galeri.prepend(div);
 }
-function matikanKameraOtomatis(){
-  try{ stopScan(); }catch(e){}
-  try{
-    let v=document.querySelector('video');
-    if(v && v.srcObject){
-      v.srcObject.getTracks().forEach(function(t){ t.stop(); });
-      v.srcObject=null;
-    }
-  }catch(e){}
-}
+function matikanKameraOtomatis(){ try{ stopScan(); }catch(e){} try{ let v=document.querySelector('video'); if(v && v.srcObject){ v.srcObject.getTracks().forEach(function(t){ t.stop(); }); v.srcObject=null; } }catch(e){} }
 window.addEventListener('pagehide', matikanKameraOtomatis);
-document.addEventListener('visibilitychange', function(){
-  if(document.hidden){ matikanKameraOtomatis(); }
-});
+document.addEventListener('visibilitychange', function(){ if(document.hidden){ matikanKameraOtomatis(); } });
 </script>
 </body>
 </html>
