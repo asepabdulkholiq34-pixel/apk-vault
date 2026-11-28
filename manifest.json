@@ -2,7 +2,7 @@
   "name": "MAP JABAR - SMKS AL MANAR",
   "short_name": "MAP JABAR",
   "description": "Peta Jawa Barat - Peta Diam, Pin Kedip",
-  "start_url": "./index.html",
+  "start_url": "./map-jabar.html",
   "display": "standalone",
   "background_color": "#166534",
   "theme_color": "#166534",
