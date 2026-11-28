@@ -162,7 +162,7 @@ let markerSaya=null, watchId=null, routeLayer=null, fasilitasLayer=L.layerGroup(
 let titikAwal=null, titikTujuan=null, markerA=null, markerB=null;
 let posisiSaya=null, fasilitasAktif=null, fasilitasTerakhir=null;
 // === KUNCI PETA = HIDUP DARI AWAL, PAK. BIAR MAP DIAM. ===
-let petaTerkunci=true;
+let petaTerkunci=false;
 let petaSudahDiaturUntukRute=false; // Kalau sudah diatur 1x untuk rute, jangan diatur lagi, Pak.
 
 function iconSaya(){
@@ -227,7 +227,7 @@ function lokasiSaya(){
 function mulaiRealTime(){
  if(watchId!==null) return;
  // Update tiap 5 detik aja, Pak. Biar nggak goyang terus. Dan jangan pakai maximumAge 0.
- watchId=navigator.geolocation.watchPosition((pos)=>updateLokasi(pos,false), null, {enableHighAccuracy:true, maximumAge:5000, timeout:10000});
+ watchId=navigator.geolocation.watchPosition((pos)=>updateLokasi(pos,false), null, {enableHighAccuracy:true, maximumAge:0, timeout:10000});
  document.getElementById('lokasiTxt').innerText='🟢 REAL TIME AKTIF - Yang kedip cuma pin-nya, Pak. Peta diam.';
 }
 function stopRealTime(){ if(watchId!==null){navigator.geolocation.clearWatch(watchId); watchId=null;} document.getElementById('lokasiTxt').innerText='⏹️ Real Time dimatikan'; }
@@ -238,7 +238,7 @@ function updateLokasi(pos, pertama){
  let lokasiBaru={lat:lat,lng:lng};
  let geser=posisiSaya?jarakMeter(posisiSaya,lokasiBaru):9999;
  // Kalau gesernya cuma 3 meter (goyang GPS), anggap diam, Pak. Jangan update apa-apa.
- if(!pertama && geser<3) return;
+ if(!pertama && geser<1) return;
  posisiSaya=lokasiBaru;
  titikAwal=lokasiBaru;
  document.getElementById('dariTxt').value='📍 Lokasi Saya (Real Time) - '+lat.toFixed(5)+', '+lng.toFixed(5);
