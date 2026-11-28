@@ -103,7 +103,7 @@ input,select{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px;ma
 <label>Dari (Titik Awal)</label>
 <input id="dariTxt" readonly placeholder="Otomatis: Lokasi Saya">
 <label>Ke (Tujuan)</label>
-<input id="keTxt" readonly placeholder="Otomatis: Klik peta / Klik masjid">
+<input id="keTxt" placeholder="✍️ Ketik tujuan di sini, Pak. Contoh: SPBU Cibarusah" inputmode="text" enterkeyhint="go" onkeydown="if(event.key==='Enter') cariDariKe()">
 <select id="modeRute">
 <option value="driving">🚗 Mobil / Motor</option>
 <option value="walking">🚶 Jalan Kaki</option>
@@ -318,6 +318,21 @@ async function geocode(teks){
  let res=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(teks+', Jawa Barat, Indonesia'));
  let data=await res.json(); if(!data.length) return null;
  return {lat:parseFloat(data[0].lat), lng:parseFloat(data[0].lon)};
+}
+ async function cariDariKe(){
+  let teks = document.getElementById('keTxt').value;
+  if(!teks) return alert('Ketik dulu tujuannya, Pak. Contoh: SPBU Cibarusah');
+  if(!titikAwal && posisiSaya) titikAwal = posisiSaya;
+  if(!titikAwal){ alert('Pencet 📍 Lokasi Saya dulu, Pak.'); return; }
+  document.getElementById('keTxt').value = '⏳ Mencari ' + teks + '...';
+  let hasil = await geocode(teks);
+  if(!hasil){ document.getElementById('keTxt').value = teks; return alert('Tidak ketemu, Pak. Coba ketik lebih lengkap, Pak. Contoh: SPBU Pertamina Cibarusah, Bogor'); }
+  titikTujuan = hasil;
+  if(markerB) map.removeLayer(markerB);
+  markerB = L.marker([hasil.lat, hasil.lng], {icon: iconAB('B','pin-b')}).addTo(map).bindPopup('<b>🔴 B - ' + teks + '</b>').openPopup();
+  document.getElementById('keTxt').value = '🎯 ' + teks;
+  petaSudahDiaturUntukRute = false;
+  buatRute(true);
 }
 async function buatRuteDariTeks(){
  if(!titikAwal && posisiSaya){ titikAwal=posisiSaya; }
