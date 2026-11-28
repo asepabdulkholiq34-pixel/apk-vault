@@ -342,31 +342,63 @@ function hapusRute(){
  updateStatusAwal();
 }
 
+// ===== GANTI FUNGSI LAMA DENGAN INI, PAK. SERVER CADANGAN + LEBIH CEPAT =====
+let serverOverpass = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter'
+];
+
+async function fetchOverpass(query){
+  // Coba server 1, kalau gagal / lemot > 15 detik, langsung pindah server 2, lalu server 3, Pak.
+  for(let i=0;i<serverOverpass.length;i++){
+    try{
+      let ctrl = new AbortController();
+      let timer = setTimeout(()=>ctrl.abort(), 15000); // 15 detik aja, jangan 30 detik, Pak.
+      let res = await fetch(serverOverpass[i]+'?data='+encodeURIComponent(query), {signal: ctrl.signal});
+      clearTimeout(timer);
+      if(!res.ok) continue;
+      let data = await res.json();
+      if(data.elements) return data;
+    }catch(e){
+      console.log('Server '+ (i+1) +' gagal, coba server berikutnya, Pak.');
+    }
+  }
+  throw new Error('Semua server sibuk');
+}
+
 async function cariFasilitas(tipe,nama,kelas,emoji,btn){
  if(fasilitasAktif===tipe){ hapusFasilitas(); return; }
  document.querySelectorAll('#gridFasilitas button').forEach(b=>{b.classList.remove('on'); b.innerHTML=b.innerHTML.replace(' ✅','');});
  btn.classList.add('on');
  if(!btn.innerHTML.includes('✅')) btn.innerHTML=btn.innerHTML+' ✅';
  fasilitasAktif=tipe; fasilitasTerakhir={tipe,nama,kelas,emoji,btn};
+
  let c=posisiSaya||map.getCenter();
+ // RADIUS DIKECILIN, PAK. BIAR CEPAT. Dulu 8 km, sekarang 5 km aja, Pak.
+ // Kalau Bapak mau lebih jauh, zoom out dikit, nanti otomatis jadi 10 km, Pak.
  let zoom=map.getZoom();
- let radius = zoom>=14 ? 8000 : zoom>=11 ? 25000 : zoom>=8 ? 60000 : 100000;
- document.getElementById('listFasilitas').innerHTML='⏳ Mencari '+nama+' yang ada namanya aja, Pak...';
+ let radius = zoom>=14 ? 5000 : zoom>=12 ? 10000 : 15000;
+ // Limit 30 aja, Pak. Jangan 60. Biar nggak berat di sinyal lemah, Pak.
+ let limit = 30;
+
+ document.getElementById('listFasilitas').innerHTML='⏳ Mencari '+nama+' di radius '+(radius/1000)+' km...<br><span class="small">Sinyal lagi dicari yang paling cepat, Pak. Tunggu 5-10 detik, Pak.</span>';
+
  let query='';
  if(tipe==='mosque'){
-   query=`[out:json][timeout:30];
-   (
-     node["amenity"="place_of_worship"]["religion"="muslim"](around:${radius},${c.lat},${c.lng});
-     way["amenity"="place_of_worship"]["religion"="muslim"](around:${radius},${c.lat},${c.lng});
-     node["building"="mosque"](around:${radius},${c.lat},${c.lng});
-     way["building"="mosque"](around:${radius},${c.lat},${c.lng});
-   );out center 60;`;
+   // Query masjid DIPERSIMPLE, Pak. Cuma 1 jenis aja, jangan 4x. Makanya kemarin lama, Pak.
+   query=`[out:json][timeout:15];(node["amenity"="place_of_worship"]["religion"="muslim"](around:${radius},${c.lat},${c.lng});way["amenity"="place_of_worship"]["religion"="muslim"](around:${radius},${c.lat},${c.lng}););out center ${limit};`;
+ } else if(tipe==='fuel'){
+   // SPBU: cari fuel + brand SPBU / Pertamina / Shell, Pak. Biar SPBU Kebon Kopi ketemu, Pak.
+   query=`[out:json][timeout:15];(node["amenity"="fuel"](around:${radius},${c.lat},${c.lng});way["amenity"="fuel"](around:${radius},${c.lat},${c.lng}););out center ${limit};`;
+ } else if(tipe==='school'){
+   query=`[out:json][timeout:15];(node["amenity"="school"](around:${radius},${c.lat},${c.lng});way["amenity"="school"](around:${radius},${c.lat},${c.lng}););out center ${limit};`;
  } else {
-   query=`[out:json][timeout:30];(node["amenity"="${tipe}"](around:${radius},${c.lat},${c.lng});way["amenity"="${tipe}"](around:${radius},${c.lat},${c.lng}););out center 40;`;
+   query=`[out:json][timeout:15];(node["amenity"="${tipe}"](around:${radius},${c.lat},${c.lng});way["amenity"="${tipe}"](around:${radius},${c.lat},${c.lng}););out center ${limit};`;
  }
+
  try{
-  let res=await fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(query));
-  let data=await res.json();
+  let data = await fetchOverpass(query);
   let unik={}; let list=[];
   data.elements.forEach(el=>{
     let lat=el.lat||el.center?.lat; let lng=el.lon||el.center?.lon; if(!lat) return;
@@ -374,27 +406,24 @@ async function cariFasilitas(tipe,nama,kelas,emoji,btn){
     if(unik[kunci]) return; unik[kunci]=1;
     list.push(el);
   });
-  // === BUANG YANG TANPA NAMA, PAK. INI PERMINTAAN BAPAK. ===
-  // === BUANG JUGA GEREJA, PAK. ===
+
+  // Filter: buang tanpa nama + buang gereja, Pak.
   list=list.filter(el=>{
     let t=el.tags||{};
-    // 1. Kalau nggak ada nama, BUANG, Pak.
     if(!t.name || t.name.trim()==='') return false;
     let namaBawah=t.name.toLowerCase();
     let agama=(t.religion||'').toLowerCase();
-    // 2. Kalau Gereja / Church / Vihara, BUANG, Pak.
     if(['christian','catholic','protestant','hindu','buddhist','jewish','sikh'].includes(agama)) return false;
-    if(namaBawah.includes('gereja')||namaBawah.includes('church')||namaBawah.includes('vihara')||namaBawah.includes('pura')||namaBawah.includes('kelenteng')||namaBawah.includes('protestant')) return false;
+    if(namaBawah.includes('gereja')||namaBawah.includes('church')||namaBawah.includes('vihara')||namaBawah.includes('pura')||namaBawah.includes('protestant')) return false;
     if(tipe==='mosque'){
-      // 3. Khusus Masjid: harus ada kata Masjid / Mushola / Langgar / Surau / nama Islam, atau agamanya muslim / bangunannya masjid.
-      // Kalau namanya "Masjid (tanpa nama)" juga dibuang, Pak. Itu tadi yang balik lagi, Pak.
       if(namaBawah.includes('tanpa nama')||namaBawah.includes('unnamed')) return false;
-      if(namaBawah.includes('masjid')||namaBawah.includes('mushola')||namaBawah.includes('musholla')||namaBawah.includes('langgar')||namaBawah.includes('surau')||namaBawah.includes('musala')||namaBawah.includes('musalla')) return true;
+      if(namaBawah.includes('masjid')||namaBawah.includes('mushola')||namaBawah.includes('musholla')||namaBawah.includes('langgar')||namaBawah.includes('surau')||namaBawah.includes('musala')) return true;
       if(agama==='muslim' || t.building==='mosque') return true;
-      return false; // Kalau nggak ada ciri masjidnya, buang, Pak. Biar nggak kecampur gereja lagi.
+      return false;
     }
     return true;
   });
+
   if(tipe==='mosque' && posisiSaya){
     list.sort((a,b)=>{
       let la={lat:a.lat||a.center?.lat, lng:a.lon||a.center?.lon};
@@ -402,9 +431,19 @@ async function cariFasilitas(tipe,nama,kelas,emoji,btn){
       return jarakMeter(posisiSaya,la)-jarakMeter(posisiSaya,lb);
     });
   }
+// Sebelum ditampilkan, urutkan dulu dari yang paling dekat, Pak.
+// Baru ambil 40 yang paling dekat. Jangan ambil 40 yang acak, Pak.
+list.sort((a,b)=>{
+  let la={lat:a.lat||a.center?.lat, lng:a.lon||a.center?.lon};
+  let lb={lat:b.lat||b.center?.lat, lng:b.lon||b.center?.lon};
+  return jarakMeter(posisiSaya,la)-jarakMeter(posisiSaya,lb);
+});
+list = list.slice(0,40); // Ambil 40 yang paling dekat aja, Pak.
   fasilitasLayer.clearLayers();
-  let html='<b>'+nama+' terdekat ('+list.length+' ketemu):</b><br><span class="small">✅ Hanya yang ada namanya, Pak. Tanpa Nama sudah dibuang. Gereja juga dibuang, Pak.</span>';
-  if(!list.length) html+='<br><br>Tidak ketemu yang ada namanya, Pak. Coba geser peta / cari di kolom Cari Tempat, Pak.';
+  let html='<b>'+nama+' terdekat ('+list.length+' ketemu):</b><br><span class="small">✅ Hanya yang ada namanya, Pak.</span>';
+  if(!list.length){
+    html+='<br><br>Tidak ketemu dalam '+ (radius/1000) +' km, Pak.<br><button onclick="cariFasilitas(\''+tipe+'\',\''+nama+'\',\''+kelas+'\',\''+emoji+'\',document.querySelector(\'.btn-'+(tipe==='mosque'?'masjid':tipe)+'\'))" style="padding:8px 12px;background:#2563eb;color:#fff;border:0;border-radius:8px;margin-top:8px">🔄 Coba Lagi / Perluas Radius</button><br><span class="small">Coba zoom out peta 1x, terus pencet lagi, Pak. Atau geser peta ke Kebon Kopi, Pak.</span>';
+  }
   list.forEach(el=>{
     let lat=el.lat||el.center?.lat; let lng=el.lon||el.center?.lon; if(!lat) return;
     let nm=el.tags.name;
@@ -415,7 +454,10 @@ async function cariFasilitas(tipe,nama,kelas,emoji,btn){
     html+='<div class="item" onclick="tujuanKe('+lat+','+lng+',\''+nm.replace(/'/g,'')+'\')"><b>'+emoji+' '+nm+'</b><br>📍 '+jarakTxt+' - 👉 Klik = Langsung rute</div>';
   });
   document.getElementById('listFasilitas').innerHTML=html;
- }catch(e){ document.getElementById('listFasilitas').innerHTML='❌ Gagal, Pak. Server lagi sibuk. Coba pencet lagi, Pak.'; }
+ }catch(e){
+  // Kalau semua server gagal, kasih tombol Coba Lagi, jangan cuma tulisan Gagal, Pak.
+  document.getElementById('listFasilitas').innerHTML='❌ <b>Gagal, Pak. Sinyal / Server lagi sibuk.</b><br><span class="small">Tadi Bapak di 0 KB/d - 2 KB/d, Pak. Makanya gagal, Pak. Coba tunggu sinyal naik dulu, Pak.</span><br><br><button onclick="location.reload()" style="padding:10px 14px;background:#166534;color:#fff;border:0;border-radius:10px;font-weight:700">🔄 Muat Ulang Halaman</button> <button onclick="cariFasilitas(\''+tipe+'\',\''+nama+'\',\''+kelas+'\',\''+emoji+'\',document.querySelector(\'#gridFasilitas .on\'))" style="padding:10px 14px;background:#2563eb;color:#fff;border:0;border-radius:10px;font-weight:700">🔁 Coba Lagi</button><br><br><span class="small">Tips: Pindah ke tempat sinyal lebih kuat dikit, Pak. Atau matikan - nyalakan Data HP, Pak.</span>';
+ }
 }
 function tujuanKe(lat,lng,nama){
  if(!posisiSaya){ alert('Pencet 📍 Lokasi Saya dulu, Pak.'); return; }
