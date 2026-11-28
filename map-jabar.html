@@ -131,6 +131,8 @@ input,select{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px;ma
 <button class="btn-makan" onclick="cariFasilitas('restaurant','🍜 Rumah Makan','pin-fas-makan','🍜',this)"><span class="dotkecil"></span>🍜 Rumah Makan</button>
 <button class="btn-terminal" onclick="cariFasilitas('bus_station','🚌 Terminal','pin-fas-terminal','🚌',this)"><span class="dotkecil"></span>🚌 Terminal</button>
 <button class="btn-taman" onclick="cariFasilitas('park','🌳 Taman','pin-fas-taman','🌳',this)"><span class="dotkecil"></span>🌳 Taman</button>
+ <button class="btn-atm" onclick="cariFasilitas('tower_bts','📶 Tower BTS','pin-fas-lain','📶',this)"><span class="dotkecil"></span>📶 Tower BTS</button>
+<button class="btn-atm" onclick="cariFasilitas('wifi','📡 WiFi Gratis','pin-fas-lain','📡',this)"><span class="dotkecil"></span>📡 WiFi</button>
 </div>
 <button class="btn btn4" onclick="hapusFasilitas()">🗑️ Hapus Fasilitas di Peta</button>
 <div id="listFasilitas"></div>
@@ -388,6 +390,12 @@ async function cariFasilitas(tipe,nama,kelas,emoji,btn){
  if(tipe==='mosque'){
    // Query masjid DIPERSIMPLE, Pak. Cuma 1 jenis aja, jangan 4x. Makanya kemarin lama, Pak.
    query=`[out:json][timeout:15];(node["amenity"="place_of_worship"]["religion"="muslim"](around:${radius},${c.lat},${c.lng});way["amenity"="place_of_worship"]["religion"="muslim"](around:${radius},${c.lat},${c.lng}););out center ${limit};`;
+   } else if(tipe==='tower_bts'){
+   // Tower BTS: Cari menara komunikasi, Pak. Ada yang pakai man_made=tower, ada yang pakai communication=mobile_phone, Pak.
+   query=`[out:json][timeout:15];(node["man_made"="tower"](around:${radius},${c.lat},${c.lng});way["man_made"="tower"](around:${radius},${c.lat},${c.lng});node["communication:mobile_phone"="yes"](around:${radius},${c.lat},${c.lng}););out center ${limit};`;
+ } else if(tipe==='wifi'){
+   // WiFi: Cari yang ada internet_access=wlan / amenity=wifi, Pak.
+   query=`[out:json][timeout:15];(node["internet_access"="wlan"](around:${radius},${c.lat},${c.lng});way["internet_access"="wlan"](around:${radius},${c.lat},${c.lng});node["amenity"="wifi"](around:${radius},${c.lat},${c.lng}););out center ${limit};`;
  } else if(tipe==='fuel'){
    // SPBU: cari fuel + brand SPBU / Pertamina / Shell, Pak. Biar SPBU Kebon Kopi ketemu, Pak.
    query=`[out:json][timeout:15];(node["amenity"="fuel"](around:${radius},${c.lat},${c.lng});way["amenity"="fuel"](around:${radius},${c.lat},${c.lng}););out center ${limit};`;
@@ -410,7 +418,7 @@ async function cariFasilitas(tipe,nama,kelas,emoji,btn){
   // Filter: buang tanpa nama + buang gereja, Pak.
   list=list.filter(el=>{
     let t=el.tags||{};
-    if(!t.name || t.name.trim()==='') return false;
+        if((!t.name || t.name.trim()==='') && tipe!=='tower_bts' && tipe!=='wifi') return false;
     let namaBawah=t.name.toLowerCase();
     let agama=(t.religion||'').toLowerCase();
     if(['christian','catholic','protestant','hindu','buddhist','jewish','sikh'].includes(agama)) return false;
@@ -446,7 +454,7 @@ list = list.slice(0,40); // Ambil 40 yang paling dekat aja, Pak.
   }
   list.forEach(el=>{
     let lat=el.lat||el.center?.lat; let lng=el.lon||el.center?.lon; if(!lat) return;
-    let nm=el.tags.name;
+        let nm=el.tags.name || el.tags.ref || el.tags.operator || (tipe==='tower_bts' ? 'Tower BTS' : 'WiFi Gratis');
     let jarakTxt=posisiSaya?teksJarak(jarakMeter(posisiSaya,{lat,lng})):'';
     let m=L.marker([lat,lng],{icon:iconFasilitas(kelas,emoji)}).addTo(fasilitasLayer);
     m.bindPopup('<b>'+emoji+' '+nm+'</b><br>'+nama+'<br>'+jarakTxt+'<br><button onclick="tujuanKe('+lat+','+lng+',\''+nm.replace(/'/g,'')+'\')">➡️ Jadikan Tujuan Rute</button>');
