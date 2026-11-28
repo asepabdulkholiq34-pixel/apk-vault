@@ -94,6 +94,7 @@ input,select{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px;ma
 <input id="cari" placeholder="🔍 Cari tempat di Jabar... Contoh: Masjid Al Amin">
 <button class="btn btn2" onclick="cariTempat()">🔍 Cari Tempat</button>
 <button class="btn" onclick="lokasiSaya()">📍 Lokasi Saya (Real Time) = JADI TITIK AWAL (A)</button>
+ <button onclick="sudahMuatFasilitasDiSini=''; muatSemuaFasilitasOtomatis()" style="width:100%;padding:12px;background:#7c3aed;color:white;border:none;border-radius:10px;font-weight:bold;margin-top:8px;">🏥 Muat Fasilitas Umum Di Sekitar Saya</button>
 <button class="btn btn3" onclick="stopRealTime()">⏹️ Stop Real Time</button>
 </div>
 
@@ -519,42 +520,83 @@ list = list.slice(0,40); // Ambil 40 yang paling dekat aja, Pak.
  let lagiMuatOtomatis = false;
 let terakhirMuatOtomatis = 0;
 
+// --- FASILITAS OTOMATIS - VERSI MANDIRI, PAK. 1X TARIK LANGSUNG SEMUA, PAK. ---
+let layerFasilitas = L.layerGroup().addTo(map);
+let sudahMuatFasilitasDiSini = '';
+
 async function muatSemuaFasilitasOtomatis(){
-  // Biar nggak dobel-dobel, Pak. Kalau baru aja dimuat, jangan dimuat lagi, Pak.
-  let sekarang = Date.now();
-  if(lagiMuatOtomatis) return;
-  if(sekarang - terakhirMuatOtomatis < 10000) return; // 10 detik sekali aja, Pak.
-  if(!posisiSaya && !titikAwal) return;
+  let pusat = posisiSaya || titikAwal || map.getCenter();
+  if(!pusat) return;
+  // Biar nggak ngulang-ngulang di tempat yang sama, Pak.
+  let kunci = pusat.lat.toFixed(3) + ',' + pusat.lng.toFixed(3);
+  if(sudahMuatFasilitasDiSini === kunci) return;
   
-  lagiMuatOtomatis = true;
-  terakhirMuatOtomatis = sekarang;
-  
-  let pusat = posisiSaya || titikAwal;
-  console.log('Muat otomatis di sekitar Bapak, Pak...');
-
-  // Ini daftar-nya, Pak. Semua langsung dimuat, Pak.
-  let daftar = [
-    {nama:'Rumah Sakit', query:'["amenity"="hospital"]'},
-    {nama:'Puskesmas', query:'["amenity"="clinic"]'},
-    {nama:'Sekolah', query:'["amenity"="school"]'},
-    {nama:'Masjid', query:'["amenity"="place_of_worship"]["religion"="muslim"]'},
-    {nama:'SPBU', query:'["amenity"="fuel"]'},
-    {nama:'Pasar', query:'["amenity"="marketplace"]'},
-    {nama:'Polisi', query:'["amenity"="police"]'},
-    {nama:'ATM / Bank', query:'["amenity"="bank"]'},
-    {nama:'Apotek', query:'["amenity"="pharmacy"]'},
-    {nama:'Rumah Makan', query:'["amenity"="restaurant"]'}
-  ];
-
-  // Muat satu-satu, Pak. Biar nggak berat, Pak. Jeda 300ms, Pak.
-  for(let item of daftar){
-    try{
-      await muatFasilitas(item.nama, item.query, pusat, 5000); // 5 km dari Bapak, Pak.
-    }catch(e){}
-    await new Promise(r => setTimeout(r, 300));
+  console.log('Muat fasilitas di', kunci);
+  // Kasih tau Bapak kalau lagi muat, Pak.
+  let infoLama = document.getElementById('infoFasilitas');
+  if(!infoLama){
+    let div = document.createElement('div');
+    div.id = 'infoFasilitas';
+    div.style.cssText = 'background:#fff3cd;padding:8px;text-align:center;font-weight:bold;';
+    div.innerHTML = '⏳ Lagi muat fasilitas umum di sekitar Bapak, Pak...';
+    document.body.prepend(div);
+  } else {
+    infoLama.innerHTML = '⏳ Lagi muat fasilitas umum di sekitar Bapak, Pak...';
+    infoLama.style.display = 'block';
   }
-  lagiMuatOtomatis = false;
+
+  try{
+    // 1x query aja, Pak. Semua fasilitas sekaligus, Pak. Radius 5 km, Pak.
+    let q = `[out:json][timeout:25];(node["amenity"~"hospital|clinic|school|fuel|police|pharmacy|bank|marketplace|place_of_worship"](around:5000,${pusat.lat},${pusat.lng});way["amenity"~"hospital|clinic|school|fuel|police|pharmacy|bank|marketplace|place_of_worship"](around:5000,${pusat.lat},${pusat.lng}););out center;`;
+    let r = await fetch('https://overpass-api.de/api/interpreter?data=' + encodeURIComponent(q));
+    let j = await r.json();
+    layerFasilitas.clearLayers();
+    let jumlah = 0;
+    (j.elements || []).forEach(e => {
+      let lat = e.lat || (e.center && e.center.lat);
+      let lng = e.lon || (e.center && e.center.lon);
+      if(!lat) return;
+      let nama = (e.tags && e.tags.name) || 'Fasilitas Umum';
+      let jenis = (e.tags && e.tags.amenity) || 'umum';
+      let emoji = '📍';
+      if(jenis==='hospital') emoji='🏥';
+      if(jenis==='clinic') emoji='🏥';
+      if(jenis==='school') emoji='🏫';
+      if(jenis==='fuel') emoji='⛽';
+      if(jenis==='police') emoji='👮';
+      if(jenis==='pharmacy') emoji='💊';
+      if(jenis==='bank') emoji='🏦';
+      if(jenis==='marketplace') emoji='🛒';
+      if(jenis==='place_of_worship') emoji='🕌';
+      L.marker([lat,lng]).addTo(layerFasilitas).bindPopup(`<b>${emoji} ${nama}</b><br>${jenis}<br><button onclick="pilihTujuanDariFasilitas(${lat},${lng},'${nama.replace(/'/g,"")}')">Jadikan Tujuan B</button>`);
+      jumlah++;
+    });
+    sudahMuatFasilitasDiSini = kunci;
+    let info = document.getElementById('infoFasilitas');
+    if(info) info.innerHTML = `✅ Ketemu ${jumlah} fasilitas umum di sekitar Bapak, Pak. Klik pin-nya, Pak. Terus pencet Jadikan Tujuan B, Pak.`;
+    setTimeout(()=>{ if(info) info.style.display='none'; }, 5000);
+  }catch(e){
+    let info = document.getElementById('infoFasilitas');
+    if(info) info.innerHTML = '❌ Gagal muat, Pak. Sinyal lagi 0,0. Coba lagi pas sinyal udah 100 KB/d ke atas, Pak.';
+  }
 }
+
+function pilihTujuanDariFasilitas(lat,lng,nama){
+  titikTujuan = {lat:lat, lng:lng};
+  if(markerB) map.removeLayer(markerB);
+  markerB = L.marker([lat,lng], {icon: iconAB('B','pin-b')}).addTo(map).bindPopup('<b>🔴 B - '+nama+'</b>').openPopup();
+  document.getElementById('keTxt').value = '🎯 ' + nama;
+  buatRute(true);
+}
+
+// Pemicu-nya, Pak. Kalau Bapak geser peta, muat lagi, Pak.
+let timerFasilitas;
+map.on('moveend', function(){
+  clearTimeout(timerFasilitas);
+  timerFasilitas = setTimeout(() => {
+    if(map.getZoom() >= 12) muatSemuaFasilitasOtomatis();
+  }, 1500);
+});
 function tujuanKe(lat,lng,nama){
  if(!posisiSaya){ alert('Pencet 📍 Lokasi Saya dulu, Pak.'); return; }
  titikAwal=posisiSaya;
