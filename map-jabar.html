@@ -203,7 +203,29 @@ function aktifkanKompas(){
    DeviceOrientationEvent.requestPermission().then(res=>{ if(res==='granted'){ mulaiKompas(); btn.innerText='🧭 Kompas Aktif ✅'; btn.classList.add('on'); } });
  } else { mulaiKompas(); btn.innerText='🧭 Kompas Aktif ✅'; btn.classList.add('on'); }
 }
-function mulaiKompas(){ window.addEventListener('deviceorientation', (e)=>{ if(e.alpha==null) return; putarKompas(360-e.alpha); }); putarKompas(0); }
+let arahHalus = 0;
+function mulaiKompas(){
+  // Pakai yang absolute, Pak. Biar utara-nya utara bumi, bukan utara HP, Pak.
+  window.addEventListener('deviceorientationabsolute', (e)=>{
+    let deg = e.webkitCompassHeading != null ? e.webkitCompassHeading : (e.alpha!=null ? 360-e.alpha : null);
+    if(deg==null) return;
+    // Dihalusin, Pak. Biar nggak loncat-loncat, Pak. Kalau loncat 10 derajat, diemin aja, Pak.
+    let selisih = deg - arahHalus;
+    if(selisih > 180) selisih -= 360;
+    if(selisih < -180) selisih += 360;
+    if(Math.abs(selisih) < 2) return; // Kalau geser cuma 2 derajat, anggap goyang, Pak.
+    arahHalus += selisih * 0.3; // 0.3 = halusin 30% aja, Pak. Biar lembut, Pak.
+    if(arahHalus < 0) arahHalus += 360;
+    if(arahHalus >= 360) arahHalus -= 360;
+    putarKompas(arahHalus);
+  });
+  window.addEventListener('deviceorientation', (e)=>{
+    if(e.webkitCompassHeading != null) return;
+    if(e.alpha==null) return;
+    putarKompas(360-e.alpha);
+  });
+  putarKompas(0);
+}
 function pindahKota(lat,lng,nama){ petaSudahDiaturUntukRute=false; map.setView([lat,lng],13); L.popup().setLatLng([lat,lng]).setContent('<b>'+nama+'</b>').openOn(map); }
 function toggleKunci(){
  petaTerkunci=!petaTerkunci;
