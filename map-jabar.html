@@ -264,6 +264,8 @@ function updateLokasi(pos, pertama){
  // Kalau gesernya cuma 3 meter (goyang GPS), anggap diam, Pak. Jangan update apa-apa.
  if(!pertama && geser<1) return;
  posisiSaya=lokasiBaru;
+ // Langsung muat fasilitas, Pak. Nggak usah pencet tombol, Pak.
+setTimeout(() => muatSemuaFasilitasOtomatis(), 1000);
  titikAwal=lokasiBaru;
  document.getElementById('dariTxt').value='📍 Lokasi Saya (Real Time) - '+lat.toFixed(5)+', '+lng.toFixed(5);
  updateStatusAwal();
@@ -300,7 +302,17 @@ map.on('click',function(e){
  buatRute(true);
 });
 map.on('dblclick',function(e){ hapusRute(); alert('Rute dihapus, Pak.'); });
-
+// Kalau Bapak geser peta ke tempat baru, muat lagi fasilitas di situ, Pak.
+let timerGeser;
+map.on('moveend', function(){
+  clearTimeout(timerGeser);
+  timerGeser = setTimeout(() => {
+    // Cuma muat kalau peta-nya udah di-zoom deket, Pak. Biar nggak berat, Pak.
+    if(map.getZoom() >= 12){
+      muatSemuaFasilitasOtomatis();
+    }
+  }, 1500); // Tunggu 1.5 detik setelah Bapak berhenti geser, Pak.
+});
 async function cariTempat(){
  let q=document.getElementById('cari').value; if(!q) return alert('Isi dulu tempatnya, Pak.');
  let res=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q+', Jawa Barat, Indonesia'));
@@ -503,6 +515,45 @@ list = list.slice(0,40); // Ambil 40 yang paling dekat aja, Pak.
   // Kalau semua server gagal, kasih tombol Coba Lagi, jangan cuma tulisan Gagal, Pak.
   document.getElementById('listFasilitas').innerHTML='❌ <b>Gagal, Pak. Sinyal / Server lagi sibuk.</b><br><span class="small">Tadi Bapak di 0 KB/d - 2 KB/d, Pak. Makanya gagal, Pak. Coba tunggu sinyal naik dulu, Pak.</span><br><br><button onclick="location.reload()" style="padding:10px 14px;background:#166534;color:#fff;border:0;border-radius:10px;font-weight:700">🔄 Muat Ulang Halaman</button> <button onclick="cariFasilitas(\''+tipe+'\',\''+nama+'\',\''+kelas+'\',\''+emoji+'\',document.querySelector(\'#gridFasilitas .on\'))" style="padding:10px 14px;background:#2563eb;color:#fff;border:0;border-radius:10px;font-weight:700">🔁 Coba Lagi</button><br><br><span class="small">Tips: Pindah ke tempat sinyal lebih kuat dikit, Pak. Atau matikan - nyalakan Data HP, Pak.</span>';
  }
+}
+ let lagiMuatOtomatis = false;
+let terakhirMuatOtomatis = 0;
+
+async function muatSemuaFasilitasOtomatis(){
+  // Biar nggak dobel-dobel, Pak. Kalau baru aja dimuat, jangan dimuat lagi, Pak.
+  let sekarang = Date.now();
+  if(lagiMuatOtomatis) return;
+  if(sekarang - terakhirMuatOtomatis < 10000) return; // 10 detik sekali aja, Pak.
+  if(!posisiSaya && !titikAwal) return;
+  
+  lagiMuatOtomatis = true;
+  terakhirMuatOtomatis = sekarang;
+  
+  let pusat = posisiSaya || titikAwal;
+  console.log('Muat otomatis di sekitar Bapak, Pak...');
+
+  // Ini daftar-nya, Pak. Semua langsung dimuat, Pak.
+  let daftar = [
+    {nama:'Rumah Sakit', query:'["amenity"="hospital"]'},
+    {nama:'Puskesmas', query:'["amenity"="clinic"]'},
+    {nama:'Sekolah', query:'["amenity"="school"]'},
+    {nama:'Masjid', query:'["amenity"="place_of_worship"]["religion"="muslim"]'},
+    {nama:'SPBU', query:'["amenity"="fuel"]'},
+    {nama:'Pasar', query:'["amenity"="marketplace"]'},
+    {nama:'Polisi', query:'["amenity"="police"]'},
+    {nama:'ATM / Bank', query:'["amenity"="bank"]'},
+    {nama:'Apotek', query:'["amenity"="pharmacy"]'},
+    {nama:'Rumah Makan', query:'["amenity"="restaurant"]'}
+  ];
+
+  // Muat satu-satu, Pak. Biar nggak berat, Pak. Jeda 300ms, Pak.
+  for(let item of daftar){
+    try{
+      await muatFasilitas(item.nama, item.query, pusat, 5000); // 5 km dari Bapak, Pak.
+    }catch(e){}
+    await new Promise(r => setTimeout(r, 300));
+  }
+  lagiMuatOtomatis = false;
 }
 function tujuanKe(lat,lng,nama){
  if(!posisiSaya){ alert('Pencet 📍 Lokasi Saya dulu, Pak.'); return; }
