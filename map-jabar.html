@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="id"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MAP JABAR - Tombol Berwarna + Toggle</title>
+<title>MAP JABAR - Lokasi Saya = Titik Awal Otomatis</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
@@ -10,8 +10,6 @@
 .header h2{margin:0;font-size:18px}.header p{margin:3px 0 0;font-size:12px;opacity:.9}
 .map-wrap{position:sticky;top:58px;z-index:999;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.15)}
 #map{height:46vh;width:100%;z-index:1}
-
-/* PIN SAYA - KUNING GEDE, TETAP ADA, TAPI NGGAK ADA KOTAK KETERANGAN LAGI */
 .pin-saya{width:52px;height:52px;background:#facc15;border:3px solid #000;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.4)}
 .pin-saya span{transform:rotate(45deg);font-size:24px}
 .label-saya{position:absolute;top:-28px;left:50%;transform:translateX(-50%);background:#000;color:#facc15;font-weight:800;font-size:11px;padding:3px 8px;border-radius:20px;white-space:nowrap;border:2px solid #facc15}
@@ -19,7 +17,6 @@
 .pin-fas-sekolah{background:#f97316}.pin-fas-rs{background:#dc2626}.pin-fas-masjid{background:#16a34a}.pin-fas-spbu{background:#9333ea}.pin-fas-pasar{background:#0891b2}.pin-fas-polisi{background:#1e3a8a}.pin-fas-apotek{background:#db2777}.pin-fas-makan{background:#ea580c}.pin-fas-terminal{background:#475569}.pin-fas-taman{background:#65a30d}.pin-fas-lain{background:#64748b}
 .pin-ab{width:34px;height:34px;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.4)}
 .pin-a{background:#22c55e}.pin-b{background:#dc2626}
-
 .kompas{position:absolute;top:10px;right:10px;z-index:1000;width:86px;height:86px;background:rgba(255,255,255,.95);border-radius:50%;box-shadow:0 2px 10px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;text-align:center;border:2px solid #166534}
 .kompas .huruf{position:absolute;font-weight:800;font-size:12px}
 .kompas .U{top:4px;left:50%;transform:translateX(-50%);color:#dc2626}
@@ -32,43 +29,25 @@
 #arahTxt{position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:800;background:#166534;color:#fff;padding:2px 7px;border-radius:10px;white-space:nowrap}
 .tombol-kompas{position:absolute;bottom:10px;right:10px;z-index:1000;background:#fff;border:2px solid #166534;color:#166534;font-weight:800;font-size:11px;padding:7px 10px;border-radius:20px;cursor:pointer}
 .tombol-kompas.on{background:#166534;color:#fff}
-
 .panel{background:#fff;padding:12px}
 input,select{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px;margin:5px 0;font-size:14px}
 .btn{background:#166534;color:#fff;border:0;padding:11px;border-radius:10px;font-weight:700;width:100%;cursor:pointer;margin-top:6px}
 .btn2{background:#2563eb}.btn3{background:#f59e0b}.btn4{background:#dc2626}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
-
-/* === TOMBOL FASILITAS BERWARNA - INI KUNCINYA, PAK === */
-/* Kalau belum diklik: putih, tapi pinggirnya berwarna. Kalau diklik: full warna + ada ✅ */
-.grid button{padding:11px;border:2px solid #ddd;border-radius:10px;font-weight:700;cursor:pointer;background:#fff;font-size:12px;color:#333;transition:.2s}
-.grid button .dotkecil{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle}
-/* Warna tiap tombol - sama dengan warna pin di peta, Pak */
-.btn-rs{border-color:#dc2626!important}.btn-rs .dotkecil{background:#dc2626}
-.btn-rs.on{background:#dc2626!important;color:#fff!important;border-color:#dc2626!important}
-.btn-klinik{border-color:#ef4444!important}.btn-klinik .dotkecil{background:#ef4444}
-.btn-klinik.on{background:#ef4444!important;color:#fff!important}
-.btn-sekolah{border-color:#f97316!important}.btn-sekolah .dotkecil{background:#f97316}
-.btn-sekolah.on{background:#f97316!important;color:#fff!important}
-.btn-masjid{border-color:#16a34a!important}.btn-masjid .dotkecil{background:#16a34a}
-.btn-masjid.on{background:#16a34a!important;color:#fff!important}
-.btn-spbu{border-color:#9333ea!important}.btn-spbu .dotkecil{background:#9333ea}
-.btn-spbu.on{background:#9333ea!important;color:#fff!important}
-.btn-pasar{border-color:#0891b2!important}.btn-pasar .dotkecil{background:#0891b2}
-.btn-pasar.on{background:#0891b2!important;color:#fff!important}
-.btn-polisi{border-color:#1e3a8a!important}.btn-polisi .dotkecil{background:#1e3a8a}
-.btn-polisi.on{background:#1e3a8a!important;color:#fff!important}
-.btn-atm{border-color:#64748b!important}.btn-atm .dotkecil{background:#64748b}
-.btn-atm.on{background:#64748b!important;color:#fff!important}
-.btn-apotek{border-color:#db2777!important}.btn-apotek .dotkecil{background:#db2777}
-.btn-apotek.on{background:#db2777!important;color:#fff!important}
-.btn-makan{border-color:#ea580c!important}.btn-makan .dotkecil{background:#ea580c}
-.btn-makan.on{background:#ea580c!important;color:#fff!important}
-.btn-terminal{border-color:#475569!important}.btn-terminal .dotkecil{background:#475569}
-.btn-terminal.on{background:#475569!important;color:#fff!important}
-.btn-taman{border-color:#65a30d!important}.btn-taman .dotkecil{background:#65a30d}
-.btn-taman.on{background:#65a30d!important;color:#fff!important}
-
+.grid button{padding:11px;border:2px solid #ddd;border-radius:10px;font-weight:700;cursor:pointer;background:#fff;font-size:12px;color:#333}
+.grid button .dotkecil{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
+.btn-rs{border-color:#dc2626!important}.btn-rs .dotkecil{background:#dc2626}.btn-rs.on{background:#dc2626!important;color:#fff!important}
+.btn-klinik{border-color:#ef4444!important}.btn-klinik .dotkecil{background:#ef4444}.btn-klinik.on{background:#ef4444!important;color:#fff!important}
+.btn-sekolah{border-color:#f97316!important}.btn-sekolah .dotkecil{background:#f97316}.btn-sekolah.on{background:#f97316!important;color:#fff!important}
+.btn-masjid{border-color:#16a34a!important}.btn-masjid .dotkecil{background:#16a34a}.btn-masjid.on{background:#16a34a!important;color:#fff!important}
+.btn-spbu{border-color:#9333ea!important}.btn-spbu .dotkecil{background:#9333ea}.btn-spbu.on{background:#9333ea!important;color:#fff!important}
+.btn-pasar{border-color:#0891b2!important}.btn-pasar .dotkecil{background:#0891b2}.btn-pasar.on{background:#0891b2!important;color:#fff!important}
+.btn-polisi{border-color:#1e3a8a!important}.btn-polisi .dotkecil{background:#1e3a8a}.btn-polisi.on{background:#1e3a8a!important;color:#fff!important}
+.btn-atm{border-color:#64748b!important}.btn-atm .dotkecil{background:#64748b}.btn-atm.on{background:#64748b!important;color:#fff!important}
+.btn-apotek{border-color:#db2777!important}.btn-apotek .dotkecil{background:#db2777}.btn-apotek.on{background:#db2777!important;color:#fff!important}
+.btn-makan{border-color:#ea580c!important}.btn-makan .dotkecil{background:#ea580c}.btn-makan.on{background:#ea580c!important;color:#fff!important}
+.btn-terminal{border-color:#475569!important}.btn-terminal .dotkecil{background:#475569}.btn-terminal.on{background:#475569!important;color:#fff!important}
+.btn-taman{border-color:#65a30d!important}.btn-taman .dotkecil{background:#65a30d}.btn-taman.on{background:#65a30d!important;color:#fff!important}
 .card{background:#fff;margin:10px;padding:12px;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .hasil{background:#dcfce7;padding:10px;border-radius:10px;font-weight:700;text-align:center;font-size:14px}
 .small{font-size:12px;color:#555;line-height:1.5}
@@ -77,52 +56,54 @@ input,select{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px;ma
 .item{border-bottom:1px solid #eee;padding:8px 0;font-size:13px;cursor:pointer}
 .item b{color:#166534}
 .info-kompas{background:#eff6ff;padding:8px 10px;border-radius:10px;font-size:12px;text-align:center;margin-top:6px}
+.status-awal{background:#fef9c3;border:2px dashed #eab308;padding:8px 10px;border-radius:10px;font-size:12px;text-align:center;margin-top:8px;font-weight:700}
+.status-awal.ok{background:#dcfce7;border-color:#22c55e}
 </style></head>
 <body>
-<div class="header"><h2>🗺️ MAP JAWA BARAT - REAL TIME</h2><p>Rute Perjalanan + Fasilitas Umum | SMKS AL MANAR</p></div>
+<div class="header"><h2>🗺️ MAP JAWA BARAT - REAL TIME</h2><p>Lokasi Saya = Titik Awal Otomatis | SMKS AL MANAR</p></div>
 
 <div class="map-wrap">
 <div id="map"></div>
-<!-- KOTAK KETERANGAN SUDAH DIBUANG, PAK. PETA JADI BERSIH -->
 <div class="kompas"><span class="huruf U">U</span><span class="huruf S">S</span><span class="huruf B">B</span><span class="huruf T">T</span><div id="jarum"></div><div id="arahTxt">UTARA</div></div>
 <button id="btnKompas" class="tombol-kompas" onclick="aktifkanKompas()">🧭 Aktifkan Kompas HP</button>
 </div>
 
-<div class="info-kompas">🧭 <span id="derajatTxt">0° - Utara</span> | 🟡 <b>Pin KUNING GEDE = Bapak.</b> Warna pin di peta = warna tombol di bawah, Pak.</div>
+<div class="info-kompas">🧭 <span id="derajatTxt">0° - Utara</span> | 🟡 <b>Pin KUNING = Bapak = Titik Awal (A)</b></div>
 
 <div class="panel">
 <b>📍 Lokasi Bapak:</b> <span id="lokasiTxt">Belum aktif - Pencet tombol Lokasi Saya</span><br>
 <span class="badge" id="speedTxt">Kecepatan: -</span>
 <span class="badge" id="akurasiTxt">Akurasi: -</span>
 <span class="badge" id="jamTxt">Update: -</span>
-<br><br>
-<input id="cari" placeholder="🔍 Cari tempat di Jabar... Contoh: SMPN 2 Jonggol, Bekasi">
+<div id="statusAwal" class="status-awal">⚠️ TITIK AWAL BELUM ADA - Pencet 📍 Lokasi Saya dulu, Pak. Baru klik peta / klik sekolah.</div>
+<br>
+<input id="cari" placeholder="🔍 Cari tempat di Jabar... Contoh: SMPN 2 Jonggol">
 <button class="btn btn2" onclick="cariTempat()">🔍 Cari Tempat</button>
-<button class="btn" onclick="lokasiSaya()">📍 Lokasi Saya (Real Time) - PIN KUNING</button>
+<button class="btn" onclick="lokasiSaya()">📍 Lokasi Saya (Real Time) = JADI TITIK AWAL (A)</button>
 <button class="btn btn3" onclick="stopRealTime()">⏹️ Stop Real Time</button>
 </div>
 
 <div class="card">
 <h3 style="margin:0">🚗 RUTE PERJALANAN</h3>
-<p class="small">Klik peta 1x = <b style="color:#22c55e">A Hijau (Awal)</b>, klik lagi = <b style="color:#dc2626">B Merah (Tujuan)</b>.</p>
-<label>Dari (Titik Awal)</label>
-<input id="dariTxt" placeholder="Contoh: Cibeber - atau klik peta">
-<label>Ke (Tujuan)</label>
-<input id="keTxt" placeholder="Contoh: SMPN 2 Jonggol - atau klik peta">
+<p class="small"><b>Cara Baru, Pak:</b><br>1. Pencet <b>📍 Lokasi Saya</b> dulu. Otomatis jadi <b>A</b>.<br>2. Terus <b>klik peta sembarangan</b> = langsung jadi <b>B (Tujuan)</b> + langsung ada rutenya.<br>3. Atau <b>klik nama sekolah</b> di bawah = langsung ada rutenya.<br>4. <b>Klik 2x di peta</b> = Hapus rute.</p>
+<label>Dari (Titik Awal) - Otomatis dari Lokasi Saya</label>
+<input id="dariTxt" readonly placeholder="Otomatis: Lokasi Saya - Pencet Lokasi Saya dulu">
+<label>Ke (Tujuan) - Otomatis dari klik peta / klik sekolah</label>
+<input id="keTxt" readonly placeholder="Otomatis: Klik peta / Klik sekolah di bawah">
 <select id="modeRute">
 <option value="driving">🚗 Mobil / Motor</option>
 <option value="walking">🚶 Jalan Kaki</option>
 <option value="cycling">🚲 Sepeda</option>
 </select>
 <button class="btn btn2" onclick="buatRuteDariTeks()">🗺️ Buat Rute</button>
-<button class="btn btn4" onclick="hapusRute()">🗑️ Hapus Rute</button>
+<button class="btn btn4" onclick="hapusRute()">🗑️ Hapus Rute (Atau Klik 2x di Peta)</button>
 <div id="hasilRute" class="hasil" style="display:none"></div>
 <div id="petunjuk" class="small"></div>
 </div>
 
 <div class="card">
 <h3 style="margin:0">🏥 FASILITAS UMUM DI SEKITAR</h3>
-<p class="small">Warna tombol = warna pin di peta, Pak. <b>Pencet 1x = Muncul. Pencet lagi = Hilang.</b></p>
+<p class="small">Pencet tombol, Pak. Terus <b>klik nama sekolahnya</b> = langsung ada rute dari Bapak ke sana, Pak.</p>
 <div class="grid" id="gridFasilitas">
 <button class="btn-rs" onclick="cariFasilitas('hospital','🏥 Rumah Sakit','pin-fas-rs','✚',this)"><span class="dotkecil"></span>🏥 Rumah Sakit</button>
 <button class="btn-klinik" onclick="cariFasilitas('clinic','🩺 Puskesmas','pin-fas-rs','🩺',this)"><span class="dotkecil"></span>🩺 Puskesmas</button>
@@ -142,7 +123,7 @@ input,select{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px;ma
 </div>
 
 <div class="card"><h3 style="margin:0">⭐ Cepat Ke Kota di Jabar</h3>
-<div class="grid" id="gridKota">
+<div class="grid">
 <button onclick="pindahKota(-6.9147,107.6098,'Bandung')">Bandung</button>
 <button onclick="pindahKota(-6.5971,106.8060,'Bogor')">Bogor</button>
 <button onclick="pindahKota(-6.7050,108.5570,'Cirebon')">Cirebon</button>
@@ -158,23 +139,34 @@ input,select{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px;ma
 </div></div>
 
 <script>
-let map=L.map('map',{scrollWheelZoom:false}).setView([-6.9147,107.6098],10);
+let map=L.map('map',{scrollWheelZoom:false, doubleClickZoom:false}).setView([-6.9147,107.6098],10);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
 map.on('click',()=>{ map.scrollWheelZoom.enable(); });
 map.on('mouseout',()=>{ map.scrollWheelZoom.disable(); });
 
 let markerSaya=null, watchId=null, routeLayer=null, fasilitasLayer=L.layerGroup().addTo(map);
 let titikAwal=null, titikTujuan=null, markerA=null, markerB=null;
-let fasilitasAktif=null; // Nyimpen tombol yang lagi aktif, Pak. Biar bisa di-toggle.
+let posisiSaya=null; // Ini posisi real time Bapak, Pak. Selalu update.
+let fasilitasAktif=null;
 
 function iconSaya(){
- return L.divIcon({className:'', html:'<div style="position:relative"><div class="label-saya">👤 SAYA - BAPAK DI SINI</div><div class="pin-saya"><span>👤</span></div></div>', iconSize:[52,52], iconAnchor:[26,52]});
+ return L.divIcon({className:'', html:'<div style="position:relative"><div class="label-saya">👤 SAYA = TITIK AWAL (A)</div><div class="pin-saya"><span>👤</span></div></div>', iconSize:[52,52], iconAnchor:[26,52]});
 }
 function iconFasilitas(kelas,emoji){
  return L.divIcon({className:'', html:'<div class="pin-fas '+kelas+'">'+emoji+'</div>', iconSize:[36,36], iconAnchor:[18,18]});
 }
 function iconAB(huruf,kelas){
  return L.divIcon({className:'', html:'<div class="pin-ab '+kelas+'">'+huruf+'</div>', iconSize:[34,34], iconAnchor:[17,17]});
+}
+function updateStatusAwal(){
+ let el=document.getElementById('statusAwal');
+ if(titikAwal && posisiSaya){
+   el.className='status-awal ok';
+   el.innerHTML='✅ TITIK AWAL SUDAH ADA: Lokasi Bapak (Pin Kuning). Sekarang klik peta / klik sekolah = langsung jadi Tujuan, Pak.';
+ } else {
+   el.className='status-awal';
+   el.innerHTML='⚠️ TITIK AWAL BELUM ADA - Pencet 📍 Lokasi Saya dulu, Pak.';
+ }
 }
 function namaArah(deg){
  if(deg>=337.5||deg<22.5) return 'UTARA';
@@ -208,6 +200,8 @@ function mulaiKompas(){
  putarKompas(0);
 }
 function pindahKota(lat,lng,nama){ map.setView([lat,lng],13); L.popup().setLatLng([lat,lng]).setContent('<b>'+nama+'</b>').openOn(map); }
+
+// ===== LOKASI SAYA = OTOMATIS JADI TITIK AWAL, PAK =====
 function lokasiSaya(){
  if(!navigator.geolocation){alert('HP Bapak tidak dukung GPS, Pak.');return;}
  document.getElementById('lokasiTxt').innerText='Mencari lokasi... Nyala-in GPS, Pak.';
@@ -220,7 +214,7 @@ function lokasiSaya(){
 function mulaiRealTime(){
  if(watchId!==null) return;
  watchId=navigator.geolocation.watchPosition(updateLokasi, null, {enableHighAccuracy:true, maximumAge:1000, timeout:10000});
- document.getElementById('lokasiTxt').innerText='🟢 REAL TIME AKTIF - Pin KUNING = Bapak';
+ document.getElementById('lokasiTxt').innerText='🟢 REAL TIME AKTIF - Pin Kuning = Titik Awal';
 }
 function stopRealTime(){
  if(watchId!==null){navigator.geolocation.clearWatch(watchId); watchId=null;}
@@ -228,41 +222,63 @@ function stopRealTime(){
 }
 function updateLokasi(pos){
  let lat=pos.coords.latitude, lng=pos.coords.longitude;
+ posisiSaya={lat:lat,lng:lng};
+ // INI KUNCINYA, PAK: Begitu dapat lokasi, langsung jadi Titik Awal
+ titikAwal={lat:lat,lng:lng};
+ document.getElementById('dariTxt').value='📍 Lokasi Saya (Real Time) - '+lat.toFixed(5)+', '+lng.toFixed(5);
+ updateStatusAwal();
+
  let kecepatan=pos.coords.speed?Math.round(pos.coords.speed*3.6)+' km/jam':'0 km/jam (diam)';
  document.getElementById('lokasiTxt').innerText='🟡 Lat: '+lat.toFixed(5)+', Lng: '+lng.toFixed(5);
  document.getElementById('speedTxt').innerText='Kecepatan: '+kecepatan;
  document.getElementById('akurasiTxt').innerText='Akurasi: ±'+Math.round(pos.coords.accuracy)+' meter';
  document.getElementById('jamTxt').innerText='Update: '+new Date().toLocaleTimeString('id-ID');
  if(markerSaya) map.removeLayer(markerSaya);
- markerSaya=L.marker([lat,lng],{icon:iconSaya(), zIndexOffset:1000}).addTo(map).bindPopup('<b>🟡 👤 BAPAK DI SINI</b><br>Ini posisi Bapak, Pak.<br>Kecepatan: '+kecepatan).openPopup();
- if(watchId!==null) map.panTo([lat,lng]);
+ markerSaya=L.marker([lat,lng],{icon:iconSaya(), zIndexOffset:1000}).addTo(map).bindPopup('<b>🟡 👤 BAPAK DI SINI = TITIK AWAL (A)</b><br>Ini otomatis jadi titik awal, Pak.<br>Kecepatan: '+kecepatan).openPopup();
+ // Kalau Bapak jalan dan rute udah ada, rutenya ikut update dari posisi baru, Pak.
+ if(titikTujuan && watchId!==null){
+   buatRute();
+ } else if(watchId!==null) {
+   // Kalau belum ada tujuan, peta ngikutin Bapak jalan, tapi nggak lompat-lompat kalau Bapak lagi geser peta
+   // map.panTo([lat,lng]);
+ }
  if(pos.coords.heading!=null && !isNaN(pos.coords.heading) && pos.coords.speed>1) putarKompas(pos.coords.heading);
 }
+
+// ===== KLIK PETA = LANGSUNG JADI TUJUAN (B), PAK. BUKAN A LAGI, PAK =====
 map.on('click',function(e){
- if(!titikAwal){
-   titikAwal=e.latlng;
-   if(markerA) map.removeLayer(markerA);
-   markerA=L.marker(e.latlng,{icon:iconAB('A','pin-a')}).addTo(map).bindPopup('<b>🟢 A - Titik Awal</b>').openPopup();
-   document.getElementById('dariTxt').value=e.latlng.lat.toFixed(5)+', '+e.latlng.lng.toFixed(5);
- } else if(!titikTujuan){
-   titikTujuan=e.latlng;
-   if(markerB) map.removeLayer(markerB);
-   markerB=L.marker(e.latlng,{icon:iconAB('B','pin-b')}).addTo(map).bindPopup('<b>🔴 B - Tujuan</b>').openPopup();
-   document.getElementById('keTxt').value=e.latlng.lat.toFixed(5)+', '+e.latlng.lng.toFixed(5);
-   buatRute();
- } else {
-   hapusRute(); titikAwal=e.latlng;
-   markerA=L.marker(e.latlng,{icon:iconAB('A','pin-a')}).addTo(map).bindPopup('Titik Awal').openPopup();
-   document.getElementById('dariTxt').value=e.latlng.lat.toFixed(5)+', '+e.latlng.lng.toFixed(5);
+ // Kalau Titik Awal belum ada (belum pencet Lokasi Saya), kasih tau dulu, Pak.
+ if(!titikAwal || !posisiSaya){
+   alert('Pencet 📍 Lokasi Saya dulu, Pak. Biar titik awalnya dari posisi Bapak. Baru klik peta buat tujuan.');
+   return;
  }
+ // Kalau udah ada titik awal, klik peta = langsung jadi Tujuan
+ titikTujuan=e.latlng;
+ if(markerB) map.removeLayer(markerB);
+ markerB=L.marker(e.latlng,{icon:iconAB('B','pin-b')}).addTo(map).bindPopup('<b>🔴 B - Tujuan</b><br>Klik 2x di peta buat hapus rute, Pak.').openPopup();
+ document.getElementById('keTxt').value='🎯 Tujuan dari klik peta - '+e.latlng.lat.toFixed(5)+', '+e.latlng.lng.toFixed(5);
+ buatRute();
 });
+
+// Klik 2x = Hapus Rute, Pak. Sesuai permintaan Bapak.
+map.on('dblclick',function(e){
+ hapusRute();
+ alert('Rute dihapus, Pak. Titik awal tetap dari Lokasi Bapak. Klik peta lagi buat tujuan baru, Pak.');
+});
+
 async function cariTempat(){
  let q=document.getElementById('cari').value; if(!q) return alert('Isi dulu tempatnya, Pak.');
  let res=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q+', Jawa Barat, Indonesia'));
  let data=await res.json();
  if(!data.length) return alert('Tidak ketemu, Pak.');
- map.setView([data[0].lat,data[0].lon],15);
- L.marker([data[0].lat,data[0].lon],{icon:iconFasilitas('pin-fas-spbu','🔍')}).addTo(map).bindPopup('<b>🔍 Hasil Cari: '+data[0].display_name+'</b>').openPopup();
+ // Hasil cari tempat langsung jadi Tujuan juga, Pak.
+ if(!titikAwal){ alert('Pencet 📍 Lokasi Saya dulu, Pak.'); return; }
+ titikTujuan={lat:parseFloat(data[0].lat), lng:parseFloat(data[0].lon)};
+ if(markerB) map.removeLayer(markerB);
+ markerB=L.marker([titikTujuan.lat,titikTujuan.lng],{icon:iconAB('B','pin-b')}).addTo(map).bindPopup('<b>🔴 B - '+data[0].display_name+'</b>').openPopup();
+ document.getElementById('keTxt').value=data[0].display_name;
+ map.setView([titikTujuan.lat,titikTujuan.lng],15);
+ buatRute();
 }
 async function geocode(teks){
  let res=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(teks+', Jawa Barat, Indonesia'));
@@ -270,17 +286,21 @@ async function geocode(teks){
  return {lat:parseFloat(data[0].lat), lng:parseFloat(data[0].lon)};
 }
 async function buatRuteDariTeks(){
- let dari=document.getElementById('dariTxt').value;
+ if(!titikAwal && posisiSaya){ titikAwal=posisiSaya; }
+ if(!titikAwal){ alert('Pencet 📍 Lokasi Saya dulu, Pak.'); return; }
  let ke=document.getElementById('keTxt').value;
- if(!dari||!ke) return alert('Isi Dari dan Ke dulu, Pak.');
- if(dari.includes(',')){ let p=dari.split(','); titikAwal={lat:parseFloat(p[0]),lng:parseFloat(p[1])}; }
- else { titikAwal=await geocode(dari); if(!titikAwal) return alert('Titik awal tidak ketemu, Pak.'); }
- if(ke.includes(',')){ let p=ke.split(','); titikTujuan={lat:parseFloat(p[0]),lng:parseFloat(p[1])}; }
- else { titikTujuan=await geocode(ke); if(!titikTujuan) return alert('Tujuan tidak ketemu, Pak.'); }
+ if(!ke || ke.includes('Tujuan dari klik')){ alert('Tujuan belum ada, Pak. Klik peta / klik sekolah dulu, Pak.'); return; }
+ // Kalau Ke-nya masih koordinat / nama, geocode lagi kalau perlu
+ if(!titikTujuan){
+   if(ke.includes(',')){ let p=ke.split(','); titikTujuan={lat:parseFloat(p[0]),lng:parseFloat(p[1])}; }
+   else { titikTujuan=await geocode(ke); if(!titikTujuan) return alert('Tujuan tidak ketemu, Pak.'); }
+ }
  buatRute();
 }
 async function buatRute(){
  if(!titikAwal||!titikTujuan) return;
+ // Titik Awal selalu pakai posisi terbaru Bapak, Pak. Biar real time beneran.
+ if(posisiSaya) titikAwal=posisiSaya;
  let mode=document.getElementById('modeRute').value;
  let url=`https://router.project-osrm.org/route/v1/${mode}/${titikAwal.lng},${titikAwal.lat};${titikTujuan.lng},${titikTujuan.lat}?overview=full&geometries=geojson&steps=true`;
  try{
@@ -294,7 +314,7 @@ async function buatRute(){
   let menit=Math.round(r.duration/60);
   let jam=menit>=60?Math.floor(menit/60)+' jam '+ (menit%60)+' menit' : menit+' menit';
   let el=document.getElementById('hasilRute'); el.style.display='block';
-  el.innerHTML='🚗 Jarak: '+km+' km<br>⏱️ Waktu: '+jam+'<br><a target="_blank" href="https://www.google.com/maps/dir/'+titikAwal.lat+','+titikAwal.lng+'/'+titikTujuan.lat+','+titikTujuan.lng+'">➡️ Buka di Google Maps</a>';
+  el.innerHTML='🚗 Dari Lokasi Bapak ke Tujuan<br>Jarak: '+km+' km<br>⏱️ Waktu: '+jam+'<br><a target="_blank" href="https://www.google.com/maps/dir/'+titikAwal.lat+','+titikAwal.lng+'/'+titikTujuan.lat+','+titikTujuan.lng+'">➡️ Buka di Google Maps</a>';
   let teks='<b>Petunjuk Jalan:</b><br>';
   r.legs[0].steps.slice(0,15).forEach((s,i)=>{
     let belok=s.maneuver.modifier?s.maneuver.modifier:'lurus';
@@ -303,64 +323,74 @@ async function buatRute(){
   document.getElementById('petunjuk').innerHTML=teks;
  }catch(e){ alert('Internet bermasalah, Pak. Coba lagi, Pak.'); }
 }
+// Hapus rute = Tujuan hilang, tapi Titik Awal (Lokasi Bapak) tetap ada, Pak.
 function hapusRute(){
- titikAwal=null; titikTujuan=null;
+ titikTujuan=null;
  if(routeLayer) map.removeLayer(routeLayer);
- if(markerA) map.removeLayer(markerA);
  if(markerB) map.removeLayer(markerB);
- document.getElementById('dariTxt').value=''; document.getElementById('keTxt').value='';
+ // markerA tidak dipakai lagi, karena A = Pin Kuning Bapak
+ if(markerA) map.removeLayer(markerA);
+ document.getElementById('keTxt').value='';
  document.getElementById('hasilRute').style.display='none'; document.getElementById('petunjuk').innerHTML='';
+ updateStatusAwal();
 }
 
-// ===== TOGGLE FASILITAS - PENCET 1x MUNCUL, PENCET LAGI HILANG, PAK =====
 async function cariFasilitas(tipe,nama,kelas,emoji,btn){
- // Kalau tombol yang sama diklik lagi, matikan. Ini yang Bapak minta, Pak.
- if(fasilitasAktif===tipe){
-   hapusFasilitas();
-   return;
- }
- // Matikan semua tombol dulu, baru nyalakan yang diklik
+ if(fasilitasAktif===tipe){ hapusFasilitas(); return; }
  document.querySelectorAll('#gridFasilitas button').forEach(b=>{b.classList.remove('on'); b.innerHTML=b.innerHTML.replace(' ✅','');});
  btn.classList.add('on');
  if(!btn.innerHTML.includes('✅')) btn.innerHTML=btn.innerHTML+' ✅';
  fasilitasAktif=tipe;
-
  let c=map.getCenter();
  let zoom=map.getZoom();
  let radius = zoom>=14 ? 8000 : zoom>=11 ? 25000 : zoom>=8 ? 60000 : 100000;
- document.getElementById('listFasilitas').innerHTML='⏳ Mencari '+nama+' di radius '+Math.round(radius/1000)+' km...';
+ document.getElementById('listFasilitas').innerHTML='⏳ Mencari '+nama+' di radius '+Math.round(radius/1000)+' km... Klik namanya = langsung ada rute, Pak.';
  let query=`[out:json][timeout:30];(node["amenity"="${tipe}"](around:${radius},${c.lat},${c.lng});way["amenity"="${tipe}"](around:${radius},${c.lat},${c.lng}););out center 40;`;
  if(tipe==='mosque') query=`[out:json][timeout:30];(node["amenity"="place_of_worship"](around:${radius},${c.lat},${c.lng});way["amenity"="place_of_worship"](around:${radius},${c.lat},${c.lng}););out center 40;`;
  try{
   let res=await fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(query));
   let data=await res.json();
   fasilitasLayer.clearLayers();
-  let html='<b>'+nama+' terdekat ('+data.elements.length+' ketemu):</b><br><span class="small">Pencet tombol '+nama+' lagi buat ngilangin, Pak.</span>';
+  let html='<b>'+nama+' terdekat ('+data.elements.length+' ketemu):</b><br><span class="small">👉 <b>Klik namanya</b> = langsung ada rute dari Bapak ke sana, Pak.</span>';
   if(!data.elements.length) html+='<br><br>Tidak ketemu, Pak. Coba zoom petanya lebih deket, Pak.';
   data.elements.forEach(el=>{
     let lat=el.lat||el.center?.lat; let lng=el.lon||el.center?.lon;
     if(!lat) return;
     let nm=el.tags?.name||nama+' (tanpa nama)';
-    L.marker([lat,lng],{icon:iconFasilitas(kelas,emoji)}).addTo(fasilitasLayer).bindPopup('<b>'+emoji+' '+nm+'</b><br>'+nama+'<br><button onclick="tujuanKe('+lat+','+lng+',\''+nm.replace(/'/g,'')+'\')">➡️ Jadikan Tujuan Rute</button>');
-    html+='<div class="item" onclick="map.setView(['+lat+','+lng+'],16)"><b>'+emoji+' '+nm+'</b><br>📍 Klik buat liat di peta</div>';
+    // Klik pin di peta juga langsung jadi Tujuan + rute, Pak.
+    let m=L.marker([lat,lng],{icon:iconFasilitas(kelas,emoji)}).addTo(fasilitasLayer);
+    m.bindPopup('<b>'+emoji+' '+nm+'</b><br>'+nama+'<br><button onclick="tujuanKe('+lat+','+lng+',\''+nm.replace(/'/g,'')+'\')">➡️ Jadikan Tujuan Rute</button>');
+    m.on('click',()=>{ tujuanKe(lat,lng,nm); });
+    // KLIK NAMA DI DAFTAR = LANGSUNG RUTE, PAK. INI YANG BAPAK MINTA.
+    html+='<div class="item" onclick="tujuanKe('+lat+','+lng+',\''+nm.replace(/'/g,'')+'\')"><b>'+emoji+' '+nm+'</b><br>📍 👉 Klik = Langsung ada rute dari Bapak ke sini</div>';
   });
   document.getElementById('listFasilitas').innerHTML=html;
  }catch(e){ document.getElementById('listFasilitas').innerHTML='❌ Gagal, Pak. Server lagi sibuk. Coba pencet lagi, Pak.'; }
 }
+
+// ===== KLIK SEKOLAH / FASILITAS = LANGSUNG JADI TUJUAN + LANGSUNG ADA RUTE, PAK =====
 function tujuanKe(lat,lng,nama){
- titikTujuan={lat:lat,lng:lng};
- document.getElementById('keTxt').value=nama;
- if(!titikAwal && markerSaya){
-   let ll=markerSaya.getLatLng(); titikAwal={lat:ll.lat,lng:ll.lng};
-   document.getElementById('dariTxt').value='Lokasi Saya (Pin Kuning)';
+ // Kalau belum ada titik awal, minta Lokasi Saya dulu, Pak.
+ if(!posisiSaya){
+   alert('Pencet 📍 Lokasi Saya dulu, Pak. Biar titik awalnya dari posisi Bapak.');
+   return;
  }
- if(titikAwal) buatRute(); else alert('Tujuan udah dipilih, Pak. Sekarang klik peta buat titik awal, atau pencet Lokasi Saya, Pak.');
+ titikAwal=posisiSaya; // Titik awal selalu dari posisi Bapak sekarang
+ titikTujuan={lat:lat,lng:lng};
+ document.getElementById('dariTxt').value='📍 Lokasi Saya (Real Time)';
+ document.getElementById('keTxt').value='🎯 '+nama;
+ if(markerB) map.removeLayer(markerB);
+ markerB=L.marker([lat,lng],{icon:iconAB('B','pin-b')}).addTo(map).bindPopup('<b>🔴 B - '+nama+'</b><br>Tujuan dari klik '+nama+', Pak.').openPopup();
+ map.setView([lat,lng],15);
+ buatRute();
+ // Scroll ke atas biar Bapak liat rutenya di peta, Pak.
+ window.scrollTo({top:0, behavior:'smooth'});
 }
-// Hapus fasilitas = pin hilang + semua tombol balik abu-abu / putih lagi, Pak.
 function hapusFasilitas(){
  fasilitasLayer.clearLayers();
  document.getElementById('listFasilitas').innerHTML='';
  fasilitasAktif=null;
  document.querySelectorAll('#gridFasilitas button').forEach(b=>{b.classList.remove('on'); b.innerHTML=b.innerHTML.replace(' ✅','');});
 }
+updateStatusAwal();
 </script></body></html>
